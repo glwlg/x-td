@@ -12,10 +12,10 @@ namespace XTD.Presentation
     {
         private const float CardWidth = 112f;
         private const float CardHeight = 168f;
-        private const float CardArtMinX = 0.13f;
-        private const float CardArtMaxX = 0.87f;
-        private const float CardArtMinY = 0.34f;
-        private const float CardArtMaxY = 0.795f;
+        private const float CardArtMinX = 0.12f;
+        private const float CardArtMaxX = 0.88f;
+        private const float CardArtMinY = 0.24f;
+        private const float CardArtMaxY = 0.84f;
 
         private readonly List<CardView> cardViews = new();
         private BattleController battle;
@@ -53,8 +53,8 @@ namespace XTD.Presentation
         private static Sprite cachedPileCardFrameSprite;
         private static Sprite cachedPileCardBackSprite;
         private static Sprite cachedCircleSprite;
-        private readonly List<Image> cardPoolStackImages = new();
-        private readonly List<Image> usedPileStackImages = new();
+        private readonly List<PileStackLayer> cardPoolStackLayers = new();
+        private readonly List<PileStackLayer> usedPileStackLayers = new();
 
         public RectTransform CanvasRect => canvasRect;
         public RectTransform HandRoot => handRoot;
@@ -101,7 +101,10 @@ namespace XTD.Presentation
             var moraleHint = battle.NextCardWillUseMorale
                 ? "下张强化"
                 : $"{battle.MoralePendingSoldiers}/{battle.MoraleSoldiersPerCharge}";
-            resourceText.text = $"费用 {battle.Mana:0.0}/{battle.MaxMana}\n建筑位 {battle.CurrentCommand}/{battle.MaxCommand}";
+            var structureDiscountHint = battle.HasPendingStructureDiscount
+                ? $"\n流云待命 -{battle.PendingStructureCostReduction}"
+                : string.Empty;
+            resourceText.text = $"费用 {battle.Mana:0.0}/{battle.MaxMana}\n建筑位 {battle.CurrentCommand}/{battle.MaxCommand}{structureDiscountHint}";
             moraleText.text = $"士气 {battle.MoraleCharges}\n{moraleHint}";
             healthText.text = $"我方基地 {battle.PlayerBaseHp:0}/{battle.PlayerBaseMaxHp:0}\n{battle.EnemyObjectiveLabel} {battle.EnemyObjectiveHp:0}/{battle.EnemyObjectiveMaxHp:0}";
             if (cardPoolCountText != null)
@@ -114,8 +117,8 @@ namespace XTD.Presentation
                 usedPileCountText.text = $"已用\n{usedCount}";
             }
 
-            RefreshPileStack(cardPoolStackImages, cardPoolCount);
-            RefreshPileStack(usedPileStackImages, usedCount);
+            RefreshPileStack(cardPoolStackLayers, deck != null ? deck.CardPool : null, false);
+            RefreshPileStack(usedPileStackLayers, deck != null ? deck.UsedPile : null, true);
             RefreshBossHud();
             RefreshBattleInfo();
             RefreshDivinePower();
@@ -182,9 +185,10 @@ namespace XTD.Presentation
             }
 
             divinePowerButton.interactable = battle.CanReleaseDivinePower;
+            var divinePowerName = battle.DivinePowerName;
             divinePowerText.text = battle.CanReleaseDivinePower
-                ? "释放\n神通"
-                : $"神通\n{battle.Mana:0.0}/{battle.DivinePowerCost:0}";
+                ? FormatDivinePowerName(divinePowerName)
+                : $"{divinePowerName}\n{battle.Mana:0.0}/{battle.DivinePowerCost:0}";
             divineChargeFill.rectTransform.anchorMax = new Vector2(battle.DivinePowerCharge, 1f);
             divineChargeFill.color = battle.CanReleaseDivinePower
                 ? new Color(0.40f, 0.88f, 1f, 0.88f)
@@ -333,6 +337,13 @@ namespace XTD.Presentation
             releasePreviewImage.gameObject.SetActive(false);
         }
 
+        private static string FormatDivinePowerName(string name)
+        {
+            return !string.IsNullOrWhiteSpace(name) && name.Length == 4
+                ? $"{name[..2]}\n{name[2..]}"
+                : name;
+        }
+
         private void BuildDefaultLayout(Transform root)
         {
             BuildBossHud(root);
@@ -345,7 +356,7 @@ namespace XTD.Presentation
                 root,
                 new Vector2(0f, 0f),
                 new Vector2(0f, 0f),
-                new Vector2(236f, 72f),
+                new Vector2(164f, 56f),
                 new Vector2(156f, 62f),
                 new Color(0.025f, 0.035f, 0.045f, 0.48f));
             resourceText = CreateHudText("资源状态", resourcePanel.transform, Vector2.zero, Vector2.one, 18);
@@ -355,7 +366,7 @@ namespace XTD.Presentation
                 root,
                 new Vector2(0f, 0f),
                 new Vector2(0f, 0f),
-                new Vector2(236f, 142f),
+                new Vector2(164f, 132f),
                 new Vector2(156f, 62f),
                 new Color(0.025f, 0.035f, 0.045f, 0.48f));
             moraleText = CreateHudText("士气状态", moralePanel.transform, Vector2.zero, Vector2.one, 18);
@@ -363,10 +374,10 @@ namespace XTD.Presentation
             var healthPanel = CreatePanel(
                 "基地信息",
                 root,
-                new Vector2(1f, 0f),
-                new Vector2(1f, 0f),
-                new Vector2(-244f, 100f),
-                new Vector2(196f, 72f),
+                new Vector2(0.5f, 0f),
+                new Vector2(0.5f, 0f),
+                new Vector2(0f, 232f),
+                new Vector2(300f, 78f),
                 new Color(0.025f, 0.035f, 0.045f, 0.48f));
             healthText = CreateHudText("基地状态", healthPanel.transform, Vector2.zero, Vector2.one, 18);
 
@@ -379,16 +390,16 @@ namespace XTD.Presentation
                 "卡池",
                 root,
                 new Vector2(0f, 0f),
-                new Vector2(78f, 92f),
-                cardPoolStackImages,
+                new Vector2(86f, 96f),
+                cardPoolStackLayers,
                 out cardPoolCountText);
             CreatePileHud(
                 "已用牌堆",
                 "已用",
                 root,
                 new Vector2(1f, 0f),
-                new Vector2(-78f, 92f),
-                usedPileStackImages,
+                new Vector2(-86f, 96f),
+                usedPileStackLayers,
                 out usedPileCountText);
 
             resultText = CreateText("战斗结果", root, new Vector2(0.5f, 0.58f), new Vector2(0.5f, 0.58f), Vector2.zero, 64);
@@ -484,10 +495,10 @@ namespace XTD.Presentation
             var panel = CreatePanel(
                 "战况信息",
                 root,
-                new Vector2(0f, 1f),
-                new Vector2(0f, 1f),
-                new Vector2(154f, -158f),
-                new Vector2(270f, 176f),
+                new Vector2(0f, 0f),
+                new Vector2(0f, 0f),
+                new Vector2(178f, 318f),
+                new Vector2(286f, 152f),
                 new Color(0.015f, 0.018f, 0.024f, 0.44f));
             panel.gameObject.AddComponent<Outline>().effectColor = new Color(0.78f, 0.66f, 0.46f, 0.26f);
             battleInfoText = CreateHudText("战况文字", panel.transform, Vector2.zero, Vector2.one, 20);
@@ -499,10 +510,10 @@ namespace XTD.Presentation
             enemySkillPanel = CreatePanel(
                 "首领技能",
                 root,
-                new Vector2(1f, 0.5f),
-                new Vector2(1f, 0.5f),
-                new Vector2(-150f, 96f),
-                new Vector2(270f, 274f),
+                new Vector2(1f, 0f),
+                new Vector2(1f, 0f),
+                new Vector2(-170f, 344f),
+                new Vector2(286f, 238f),
                 new Color(0.015f, 0.018f, 0.024f, 0.46f));
             enemySkillPanel.gameObject.AddComponent<Outline>().effectColor = new Color(0.58f, 0.45f, 0.90f, 0.30f);
             enemySkillText = CreateHudText("首领技能文字", enemySkillPanel.transform, Vector2.zero, Vector2.one, 19);
@@ -512,8 +523,8 @@ namespace XTD.Presentation
 
         private void BuildDivinePowerHud(Transform root)
         {
-            divinePowerButton = CreateButton("释放\n神通", root, new Vector2(1f, 0f), new Vector2(142f, 142f));
-            divinePowerButton.GetComponent<RectTransform>().anchoredPosition = new Vector2(-252f, 252f);
+            divinePowerButton = CreateButton("边境\n战令", root, new Vector2(1f, 0f), new Vector2(142f, 142f));
+            divinePowerButton.GetComponent<RectTransform>().anchoredPosition = new Vector2(-232f, 258f);
             var image = divinePowerButton.GetComponent<Image>();
             image.sprite = CircleSprite();
             image.color = new Color(0.42f, 0.27f, 0.08f, 0.95f);
@@ -524,6 +535,7 @@ namespace XTD.Presentation
             {
                 divinePowerText.fontSize = 30;
                 divinePowerText.resizeTextMaxSize = 28;
+                divinePowerText.resizeTextMinSize = 15;
                 divinePowerText.color = new Color(1f, 0.94f, 0.74f, 0.98f);
             }
 
@@ -550,13 +562,32 @@ namespace XTD.Presentation
             }
         }
 
-        private static void RefreshPileStack(IReadOnlyList<Image> stackImages, int count)
+        private static void RefreshPileStack(IReadOnlyList<PileStackLayer> stackLayers, IReadOnlyList<CardDefinition> cards, bool newestOnTop)
         {
-            for (var i = 0; i < stackImages.Count; i++)
+            var count = cards != null ? cards.Count : 0;
+            for (var i = 0; i < stackLayers.Count; i++)
             {
                 var visibleLayer = count > i * 2;
-                stackImages[i].gameObject.SetActive(visibleLayer);
-                stackImages[i].color = new Color(0.20f, 0.13f, 0.07f, 0.96f);
+                var layer = stackLayers[i];
+                layer.Root.gameObject.SetActive(visibleLayer);
+                if (!visibleLayer)
+                {
+                    continue;
+                }
+
+                var previewIndex = newestOnTop
+                    ? Mathf.Clamp(count - 1 - i * 2, 0, Mathf.Max(0, count - 1))
+                    : Mathf.Clamp(i * 2, 0, Mathf.Max(0, count - 1));
+                var previewCard = cards != null && previewIndex >= 0 && previewIndex < count ? cards[previewIndex] : null;
+                var showArt = previewCard != null && previewCard.art != null;
+                layer.Art.enabled = showArt;
+                if (!showArt)
+                {
+                    continue;
+                }
+
+                layer.Art.sprite = previewCard.art;
+                FitSpriteToCover(layer.ArtRect, 52f, 78f, previewCard.art);
             }
         }
 
@@ -633,7 +664,7 @@ namespace XTD.Presentation
             return text;
         }
 
-        private static void CreatePileHud(string name, string label, Transform parent, Vector2 anchor, Vector2 position, List<Image> stackImages, out Text countText)
+        private static void CreatePileHud(string name, string label, Transform parent, Vector2 anchor, Vector2 position, List<PileStackLayer> stackLayers, out Text countText)
         {
             var panel = CreatePanel(
                 name,
@@ -642,7 +673,7 @@ namespace XTD.Presentation
                 anchor,
                 position,
                 new Vector2(112f, 142f),
-                new Color(0.025f, 0.035f, 0.045f, 0.28f));
+                new Color(0.10f, 0.07f, 0.04f, 0.24f));
 
             var cardFrameSprite = PileCardFrameSprite();
             for (var i = 0; i < 4; i++)
@@ -658,9 +689,33 @@ namespace XTD.Presentation
                 rect.localRotation = Quaternion.Euler(0f, 0f, -7f + i * 4.5f);
 
                 var image = go.GetComponent<Image>();
-                image.sprite = null;
-                image.color = new Color(0.20f, 0.13f, 0.07f, 0.96f);
+                image.sprite = PileCardBackSprite();
+                image.type = Image.Type.Simple;
+                image.preserveAspect = false;
+                image.color = new Color(0.24f, 0.16f, 0.09f, 0.92f);
                 image.raycastTarget = false;
+
+                var artMaskGo = new GameObject("牌堆卡图框", typeof(RectTransform), typeof(Image), typeof(RectMask2D));
+                artMaskGo.transform.SetParent(go.transform, false);
+                var artMaskRect = artMaskGo.GetComponent<RectTransform>();
+                artMaskRect.anchorMin = new Vector2(0.08f, 0.08f);
+                artMaskRect.anchorMax = new Vector2(0.92f, 0.92f);
+                artMaskRect.offsetMin = Vector2.zero;
+                artMaskRect.offsetMax = Vector2.zero;
+                var artMaskImage = artMaskGo.GetComponent<Image>();
+                artMaskImage.color = new Color(0.10f, 0.06f, 0.04f, 0.22f);
+                artMaskImage.raycastTarget = false;
+
+                var artGo = new GameObject("牌堆卡图", typeof(RectTransform), typeof(Image));
+                artGo.transform.SetParent(artMaskGo.transform, false);
+                var artRect = artGo.GetComponent<RectTransform>();
+                artRect.anchorMin = new Vector2(0.5f, 0.5f);
+                artRect.anchorMax = new Vector2(0.5f, 0.5f);
+                artRect.pivot = new Vector2(0.5f, 0.5f);
+                var artImage = artGo.GetComponent<Image>();
+                artImage.color = Color.white;
+                artImage.raycastTarget = false;
+                artImage.enabled = false;
 
                 var frameGo = new GameObject("牌堆牌框", typeof(RectTransform), typeof(Image));
                 frameGo.transform.SetParent(go.transform, false);
@@ -677,7 +732,7 @@ namespace XTD.Presentation
                 var outline = go.GetComponent<Outline>();
                 outline.effectColor = new Color(0.05f, 0.025f, 0.01f, 0.68f);
                 outline.effectDistance = new Vector2(2f, -2f);
-                stackImages.Add(image);
+                stackLayers.Add(new PileStackLayer(go.GetComponent<RectTransform>(), artImage, artRect));
             }
 
             countText = CreateText($"{label}数量", panel.transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 28f), 18);
@@ -719,7 +774,7 @@ namespace XTD.Presentation
 
         private static void EnsureEventSystem()
         {
-            var eventSystem = UnityEngine.Object.FindFirstObjectByType<EventSystem>();
+            var eventSystem = UnityEngine.Object.FindAnyObjectByType<EventSystem>();
             if (eventSystem == null)
             {
                 eventSystem = new GameObject("EventSystem").AddComponent<EventSystem>();
@@ -863,6 +918,56 @@ namespace XTD.Presentation
             texture.Apply();
             cachedCircleSprite = Sprite.Create(texture, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect);
             return cachedCircleSprite;
+        }
+
+        private static void FitSpriteToCover(RectTransform targetRect, float frameWidth, float frameHeight, Sprite sprite)
+        {
+            if (targetRect == null)
+            {
+                return;
+            }
+
+            if (sprite == null)
+            {
+                targetRect.sizeDelta = new Vector2(frameWidth, frameHeight);
+                targetRect.anchoredPosition = Vector2.zero;
+                targetRect.localRotation = Quaternion.identity;
+                return;
+            }
+
+            var spriteRatio = sprite.rect.width / Mathf.Max(1f, sprite.rect.height);
+            var frameRatio = frameWidth / Mathf.Max(1f, frameHeight);
+            float width;
+            float height;
+
+            if (spriteRatio >= frameRatio)
+            {
+                height = frameHeight;
+                width = height * spriteRatio;
+            }
+            else
+            {
+                width = frameWidth;
+                height = width / Mathf.Max(0.01f, spriteRatio);
+            }
+
+            targetRect.sizeDelta = new Vector2(width, height);
+            targetRect.anchoredPosition = Vector2.zero;
+            targetRect.localRotation = Quaternion.identity;
+        }
+
+        private sealed class PileStackLayer
+        {
+            public PileStackLayer(RectTransform root, Image art, RectTransform artRect)
+            {
+                Root = root;
+                Art = art;
+                ArtRect = artRect;
+            }
+
+            public RectTransform Root { get; }
+            public Image Art { get; }
+            public RectTransform ArtRect { get; }
         }
 
         private sealed class CardView : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
@@ -1044,8 +1149,8 @@ namespace XTD.Presentation
                 var inner = new GameObject("Card Interior", typeof(RectTransform), typeof(Image));
                 inner.transform.SetParent(transform, false);
                 var innerRect = inner.GetComponent<RectTransform>();
-                innerRect.anchorMin = new Vector2(0.12f, 0.08f);
-                innerRect.anchorMax = new Vector2(0.88f, 0.79f);
+                innerRect.anchorMin = new Vector2(0.08f, 0.08f);
+                innerRect.anchorMax = new Vector2(0.92f, 0.91f);
                 innerRect.offsetMin = Vector2.zero;
                 innerRect.offsetMax = Vector2.zero;
                 innerPanel = inner.GetComponent<Image>();
@@ -1079,16 +1184,16 @@ namespace XTD.Presentation
                 var typeBandGo = new GameObject("Card Type Band", typeof(RectTransform), typeof(Image));
                 typeBandGo.transform.SetParent(transform, false);
                 var typeBandRect = typeBandGo.GetComponent<RectTransform>();
-                typeBandRect.anchorMin = new Vector2(0.14f, 0.08f);
-                typeBandRect.anchorMax = new Vector2(0.86f, 0.21f);
+                typeBandRect.anchorMin = new Vector2(0.12f, 0.07f);
+                typeBandRect.anchorMax = new Vector2(0.88f, 0.20f);
                 typeBandRect.offsetMin = Vector2.zero;
                 typeBandRect.offsetMax = Vector2.zero;
                 typeBand = typeBandGo.GetComponent<Image>();
                 typeBand.color = new Color(0.14f, 0.08f, 0.05f, 0.78f);
                 typeBand.raycastTarget = false;
 
-                title = CreateCardText("标题", transform, font, new Vector2(0.08f, 0.205f), new Vector2(0.92f, 0.355f), 17, TextAnchor.MiddleCenter);
-                description = CreateCardText("类型", transform, font, new Vector2(0.08f, 0.05f), new Vector2(0.92f, 0.22f), 12, TextAnchor.UpperCenter);
+                title = CreateCardText("标题", transform, font, new Vector2(0.08f, 0.205f), new Vector2(0.92f, 0.345f), 17, TextAnchor.MiddleCenter);
+                description = CreateCardText("类型", transform, font, new Vector2(0.08f, 0.045f), new Vector2(0.92f, 0.205f), 12, TextAnchor.UpperCenter);
 
                 var costBg = new GameObject("费用底", typeof(RectTransform), typeof(Image));
                 costBg.transform.SetParent(transform, false);
@@ -1112,28 +1217,14 @@ namespace XTD.Presentation
 
             private void FitArtToCover(Sprite sprite)
             {
-                if (iconRect == null || sprite == null)
+                if (iconRect == null)
                 {
                     return;
                 }
 
                 var frameWidth = CardWidth * (CardArtMaxX - CardArtMinX);
                 var frameHeight = CardHeight * (CardArtMaxY - CardArtMinY);
-                var spriteRatio = sprite.rect.width / Mathf.Max(1f, sprite.rect.height);
-                var frameRatio = frameWidth / Mathf.Max(1f, frameHeight);
-                var width = frameWidth;
-                var height = frameHeight;
-                if (spriteRatio > frameRatio)
-                {
-                    width = frameHeight * spriteRatio;
-                }
-                else
-                {
-                    height = frameWidth / Mathf.Max(0.01f, spriteRatio);
-                }
-
-                iconRect.sizeDelta = new Vector2(width, height);
-                iconRect.anchoredPosition = Vector2.zero;
+                FitSpriteToCover(iconRect, frameWidth, frameHeight, sprite);
             }
 
             private void SetHome(int index, int count)

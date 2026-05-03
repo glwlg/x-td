@@ -177,7 +177,7 @@ namespace XTD.Content
                 card.effects.Add(Effect(EffectType.Shield, TargetRule.FriendlyFrontline, 8, 0, 99f));
                 return card;
             });
-            UpsertFixedCard(catalog, "card_cloud_banner", "流云军令", CardType.Economy, CardRarity.Rare, 1, 1, CardReleaseRule.None, "抽 1 张牌并回复费用，用来重整手牌节奏。", "Assets/_Project/Art/AI/Cards/card_cloud_banner.png", () =>
+            UpsertFixedCard(catalog, "card_cloud_banner", "流云军令", CardType.Economy, CardRarity.Rare, 1, 1, CardReleaseRule.None, "抽 1 张牌、回复费用，并令下一张建筑牌费用 -2。", "Assets/_Project/Art/AI/Cards/card_cloud_banner.png", () =>
             {
                 var card = new CardPayload();
                 card.effects.Add(Effect(EffectType.DrawCard, TargetRule.Self, 1, 0, 0));

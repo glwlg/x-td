@@ -1,5 +1,6 @@
 using System.Linq;
 using NUnit.Framework;
+using UnityEngine;
 using XTD.Cards;
 using XTD.Content;
 
@@ -51,6 +52,44 @@ namespace XTD.Tests
             Assert.That(deck.Hand.Count, Is.EqualTo(3));
             Assert.That(deck.CardPool.Count, Is.EqualTo(0));
             Assert.That(deck.UsedPile.Count, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void ExhaustCards_RemovesHeroAndDrawsReplacement()
+        {
+            var hero = ScriptableObject.CreateInstance<CardDefinition>();
+            hero.id = "hero_card";
+            hero.displayName = "测试英雄";
+            hero.type = CardType.Hero;
+
+            var supportA = ScriptableObject.CreateInstance<CardDefinition>();
+            supportA.id = "support_a";
+            supportA.type = CardType.Tactic;
+
+            var supportB = ScriptableObject.CreateInstance<CardDefinition>();
+            supportB.id = "support_b";
+            supportB.type = CardType.Spell;
+
+            var supportC = ScriptableObject.CreateInstance<CardDefinition>();
+            supportC.id = "support_c";
+            supportC.type = CardType.Structure;
+
+            var deck = new DeckRuntime(new[] { hero, supportA, supportB, supportC }, 1)
+            {
+                MaxHandSize = 4
+            };
+
+            deck.DrawFullHand();
+            var cardToRecycle = deck.Hand.First(card => card != hero);
+            deck.Play(cardToRecycle);
+
+            var removed = deck.ExhaustCards(card => card == hero);
+
+            Assert.That(removed, Is.EqualTo(1));
+            Assert.That(deck.Hand.Count, Is.EqualTo(3));
+            Assert.That(deck.Hand.Any(card => card == hero), Is.False);
+            Assert.That(deck.CardPool.Any(card => card == hero), Is.False);
+            Assert.That(deck.UsedPile.Any(card => card == hero), Is.False);
         }
     }
 }

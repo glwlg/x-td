@@ -617,6 +617,219 @@ namespace XTD.Presentation
             };
         }
 
+        private static string CardRarityName(CardRarity rarity)
+        {
+            return rarity switch
+            {
+                CardRarity.Uncommon => "良品",
+                CardRarity.Rare => "珍稀",
+                CardRarity.Epic => "秘传",
+                CardRarity.Legendary => "神授",
+                _ => "凡品"
+            };
+        }
+
+        private static Color CardRarityColor(CardRarity rarity)
+        {
+            return rarity switch
+            {
+                CardRarity.Uncommon => new Color(0.50f, 0.92f, 0.72f, 0.92f),
+                CardRarity.Rare => new Color(0.54f, 0.74f, 1f, 0.92f),
+                CardRarity.Epic => new Color(0.82f, 0.58f, 1f, 0.94f),
+                CardRarity.Legendary => new Color(1f, 0.66f, 0.28f, 0.96f),
+                _ => new Color(0.92f, 0.86f, 0.72f, 0.92f)
+            };
+        }
+
+        private Button CreateCardChoiceCard(
+            CardDefinition card,
+            Transform parent,
+            Vector2 anchor,
+            Vector2 size,
+            Vector2 offset,
+            string headerTag,
+            string actionText,
+            string badgeText = null,
+            string descOverride = null,
+            bool interactable = true)
+        {
+            var button = CreateButton(string.Empty, parent, anchor, size, offset);
+            button.interactable = interactable;
+            var image = button.GetComponent<Image>();
+            image.color = interactable
+                ? CardPanelColor(card.type)
+                : WithAlpha(CardPanelColor(card.type), 0.56f);
+
+            var outline = button.gameObject.AddComponent<Outline>();
+            outline.effectColor = WithAlpha(CardRarityColor(card.rarity), interactable ? 0.72f : 0.34f);
+            outline.effectDistance = new Vector2(2f, -2f);
+
+            var label = button.GetComponentInChildren<Text>();
+            if (label != null)
+            {
+                label.text = string.Empty;
+            }
+
+            var topBand = CreatePanel("卡牌标题带", button.transform, new Vector2(0.5f, 0.93f), new Vector2(0.5f, 0.93f), Vector2.zero, new Vector2(size.x - 32f, 28f), new Color(0.03f, 0.028f, 0.024f, 0.60f));
+            topBand.raycastTarget = false;
+            var topTag = CreateText("卡牌标题标签", topBand.transform, new Vector2(0.14f, 0.5f), new Vector2(94f, 24f), 16, TextAnchor.MiddleCenter);
+            topTag.text = headerTag;
+            topTag.color = new Color(1f, 0.90f, 0.64f, interactable ? 0.96f : 0.68f);
+            topTag.raycastTarget = false;
+
+            var rarityBadge = CreatePanel("卡牌稀有度", button.transform, new Vector2(0.84f, 0.93f), new Vector2(0.84f, 0.93f), Vector2.zero, new Vector2(86f, 24f), WithAlpha(CardRarityColor(card.rarity), interactable ? 0.34f : 0.18f));
+            rarityBadge.raycastTarget = false;
+            var rarityText = CreateText("卡牌稀有度文字", rarityBadge.transform, new Vector2(0.5f, 0.5f), new Vector2(82f, 22f), 15, TextAnchor.MiddleCenter);
+            rarityText.text = string.IsNullOrWhiteSpace(badgeText) ? CardRarityName(card.rarity) : badgeText;
+            rarityText.color = new Color(1f, 0.94f, 0.82f, interactable ? 0.96f : 0.68f);
+            rarityText.raycastTarget = false;
+
+            var artPanel = CreatePanel("卡牌卡图底", button.transform, new Vector2(0.5f, 0.64f), new Vector2(0.5f, 0.64f), Vector2.zero, new Vector2(size.x - 34f, size.y * 0.34f), new Color(0.03f, 0.028f, 0.024f, 0.60f));
+            artPanel.raycastTarget = false;
+            artPanel.gameObject.AddComponent<RectMask2D>();
+            var art = AddSpriteIcon(artPanel.transform, card.art, Vector2.zero, artPanel.rectTransform.sizeDelta);
+            if (art != null)
+            {
+                art.preserveAspect = false;
+                art.color = new Color(1f, 1f, 1f, interactable ? 1f : 0.58f);
+                FitSpriteToCover(art.rectTransform, artPanel.rectTransform.sizeDelta.x, artPanel.rectTransform.sizeDelta.y, card.art);
+            }
+
+            var name = CreateText("卡牌名称", button.transform, new Vector2(0.5f, 0.43f), new Vector2(size.x - 38f, 34f), 24, TextAnchor.MiddleCenter);
+            name.text = card.displayName;
+            name.color = new Color(1f, 0.94f, 0.80f, interactable ? 0.98f : 0.72f);
+            name.raycastTarget = false;
+            AddTextShadow(name, new Color(0.02f, 0.012f, 0f, 0.88f), new Vector2(1.2f, -1.2f));
+
+            var meta = CreateText("卡牌属性", button.transform, new Vector2(0.5f, 0.33f), new Vector2(size.x - 38f, 30f), 16, TextAnchor.MiddleCenter);
+            meta.text = $"{CardTypeName(card.type)}  费用 {card.cost}  Lv.{card.level}";
+            meta.color = new Color(0.82f, 0.96f, 0.92f, interactable ? 0.94f : 0.68f);
+            meta.raycastTarget = false;
+
+            var desc = CreateText("卡牌描述", button.transform, new Vector2(0.5f, 0.18f), new Vector2(size.x - 42f, size.y * 0.20f), 16, TextAnchor.MiddleCenter);
+            desc.text = string.IsNullOrWhiteSpace(descOverride) ? card.description : descOverride;
+            desc.color = new Color(0.95f, 0.92f, 0.84f, interactable ? 0.94f : 0.68f);
+            desc.raycastTarget = false;
+
+            var actionBand = CreatePanel("卡牌操作带", button.transform, new Vector2(0.5f, 0.07f), new Vector2(0.5f, 0.07f), Vector2.zero, new Vector2(size.x - 44f, 32f), interactable ? new Color(0.02f, 0.02f, 0.018f, 0.62f) : new Color(0.02f, 0.02f, 0.018f, 0.34f));
+            actionBand.raycastTarget = false;
+            var action = CreateText("卡牌操作文字", actionBand.transform, new Vector2(0.5f, 0.5f), new Vector2(size.x - 52f, 24f), 17, TextAnchor.MiddleCenter);
+            action.text = actionText;
+            action.color = new Color(1f, 0.88f, 0.54f, interactable ? 0.96f : 0.66f);
+            action.raycastTarget = false;
+            return button;
+        }
+
+        private Button CreateFeatureChoiceCard(
+            string title,
+            string headerTag,
+            string description,
+            string actionText,
+            Sprite art,
+            Transform parent,
+            Vector2 anchor,
+            Vector2 size,
+            Vector2 offset,
+            Color color,
+            string badgeText = null,
+            bool interactable = true)
+        {
+            var button = CreateButton(string.Empty, parent, anchor, size, offset);
+            button.interactable = interactable;
+            var image = button.GetComponent<Image>();
+            image.color = interactable ? color : WithAlpha(color, 0.56f);
+
+            var outline = button.gameObject.AddComponent<Outline>();
+            outline.effectColor = interactable ? new Color(0.90f, 0.78f, 0.44f, 0.58f) : new Color(0.48f, 0.48f, 0.48f, 0.28f);
+            outline.effectDistance = new Vector2(2f, -2f);
+
+            var label = button.GetComponentInChildren<Text>();
+            if (label != null)
+            {
+                label.text = string.Empty;
+            }
+
+            var topBand = CreatePanel("功能标题带", button.transform, new Vector2(0.5f, 0.92f), new Vector2(0.5f, 0.92f), Vector2.zero, new Vector2(size.x - 34f, 28f), new Color(0.03f, 0.028f, 0.024f, 0.60f));
+            topBand.raycastTarget = false;
+            var topTag = CreateText("功能标题标签", topBand.transform, new Vector2(0.16f, 0.5f), new Vector2(88f, 24f), 16, TextAnchor.MiddleCenter);
+            topTag.text = headerTag;
+            topTag.color = new Color(1f, 0.90f, 0.64f, interactable ? 0.96f : 0.68f);
+            topTag.raycastTarget = false;
+
+            if (!string.IsNullOrWhiteSpace(badgeText))
+            {
+                var badge = CreatePanel("功能角标", button.transform, new Vector2(0.84f, 0.92f), new Vector2(0.84f, 0.92f), Vector2.zero, new Vector2(98f, 24f), new Color(0.98f, 0.74f, 0.28f, interactable ? 0.24f : 0.12f));
+                badge.raycastTarget = false;
+                var badgeLabel = CreateText("功能角标文字", badge.transform, new Vector2(0.5f, 0.5f), new Vector2(92f, 22f), 15, TextAnchor.MiddleCenter);
+                badgeLabel.text = badgeText;
+                badgeLabel.color = new Color(1f, 0.94f, 0.82f, interactable ? 0.96f : 0.68f);
+                badgeLabel.raycastTarget = false;
+            }
+
+            var artPanel = CreatePanel("功能卡图底", button.transform, new Vector2(0.5f, 0.62f), new Vector2(0.5f, 0.62f), Vector2.zero, new Vector2(size.x - 34f, size.y * 0.32f), new Color(0.03f, 0.028f, 0.024f, 0.60f));
+            artPanel.raycastTarget = false;
+            artPanel.gameObject.AddComponent<RectMask2D>();
+            var artImage = AddSpriteIcon(artPanel.transform, art, Vector2.zero, artPanel.rectTransform.sizeDelta);
+            if (artImage != null)
+            {
+                artImage.preserveAspect = false;
+                artImage.color = new Color(1f, 1f, 1f, interactable ? 1f : 0.58f);
+                FitSpriteToCover(artImage.rectTransform, artPanel.rectTransform.sizeDelta.x, artPanel.rectTransform.sizeDelta.y, art);
+            }
+
+            var name = CreateText("功能名称", button.transform, new Vector2(0.5f, 0.40f), new Vector2(size.x - 38f, 38f), 24, TextAnchor.MiddleCenter);
+            name.text = title;
+            name.color = new Color(1f, 0.94f, 0.80f, interactable ? 0.98f : 0.72f);
+            name.raycastTarget = false;
+
+            var desc = CreateText("功能描述", button.transform, new Vector2(0.5f, 0.20f), new Vector2(size.x - 42f, size.y * 0.20f), 16, TextAnchor.MiddleCenter);
+            desc.text = description;
+            desc.color = new Color(0.95f, 0.92f, 0.84f, interactable ? 0.94f : 0.68f);
+            desc.raycastTarget = false;
+
+            var actionBand = CreatePanel("功能操作带", button.transform, new Vector2(0.5f, 0.07f), new Vector2(0.5f, 0.07f), Vector2.zero, new Vector2(size.x - 44f, 32f), interactable ? new Color(0.02f, 0.02f, 0.018f, 0.62f) : new Color(0.02f, 0.02f, 0.018f, 0.34f));
+            actionBand.raycastTarget = false;
+            var action = CreateText("功能操作文字", actionBand.transform, new Vector2(0.5f, 0.5f), new Vector2(size.x - 52f, 24f), 17, TextAnchor.MiddleCenter);
+            action.text = actionText;
+            action.color = new Color(1f, 0.88f, 0.54f, interactable ? 0.96f : 0.66f);
+            action.raycastTarget = false;
+            return button;
+        }
+
+        private static void FitSpriteToCover(RectTransform rect, float frameWidth, float frameHeight, Sprite sprite)
+        {
+            if (rect == null)
+            {
+                return;
+            }
+
+            if (sprite == null)
+            {
+                rect.sizeDelta = new Vector2(frameWidth, frameHeight);
+                rect.anchoredPosition = Vector2.zero;
+                return;
+            }
+
+            var spriteRatio = sprite.rect.width / Mathf.Max(1f, sprite.rect.height);
+            var frameRatio = frameWidth / Mathf.Max(1f, frameHeight);
+            float width;
+            float height;
+
+            if (spriteRatio >= frameRatio)
+            {
+                height = frameHeight;
+                width = height * spriteRatio;
+            }
+            else
+            {
+                width = frameWidth;
+                height = width / Mathf.Max(0.01f, spriteRatio);
+            }
+
+            rect.sizeDelta = new Vector2(width, height);
+            rect.anchoredPosition = Vector2.zero;
+        }
+
         private void BuildLegacyChoicePanel()
         {
             var choices = flow.CurrentChoices();
@@ -677,14 +890,24 @@ namespace XTD.Presentation
             var title = CreateText("奖励标题", uiRoot.transform, new Vector2(0.5f, 0.74f), new Vector2(920f, 72f), 36, TextAnchor.MiddleCenter);
             title.text = $"卡牌奖励：还可选择 {flow.PendingCardRewardPickCount} 张";
 
+            var info = CreateText("奖励说明", uiRoot.transform, new Vector2(0.5f, 0.68f), new Vector2(1020f, 42f), 20, TextAnchor.MiddleCenter);
+            info.text = "从战利品中带走新的构筑部件。卡图、费用和等级会直接决定你这一局的节奏。";
+            info.color = new Color(0.94f, 0.90f, 0.80f, 0.94f);
+
             var choices = flow.PendingCardRewardChoices();
-            var startX = -((choices.Count - 1) * 230f) * 0.5f;
+            var startX = -((choices.Count - 1) * 282f) * 0.5f;
             for (var i = 0; i < choices.Count; i++)
             {
                 var card = choices[i];
-                var label = $"{card.displayName}\n{CardTypeName(card.type)}  费用 {card.cost}  Lv.{card.level}\n{card.description}";
-                var button = CreateButton(label, uiRoot.transform, new Vector2(0.5f, 0.50f), new Vector2(220f, 190f), new Vector2(startX + i * 230f, 0f));
-                button.GetComponent<Image>().color = CardPanelColor(card.type);
+                var button = CreateCardChoiceCard(
+                    card,
+                    uiRoot.transform,
+                    new Vector2(0.5f, 0.46f),
+                    new Vector2(252f, 316f),
+                    new Vector2(startX + i * 282f, 0f),
+                    "战利品",
+                    "选入卡组",
+                    CardRarityName(card.rarity));
                 button.onClick.AddListener(() =>
                 {
                     flow.ChooseCardReward(card);
@@ -692,7 +915,10 @@ namespace XTD.Presentation
                 });
             }
 
-            var skip = CreateButton("放弃剩余奖励", uiRoot.transform, new Vector2(0.5f, 0.24f), new Vector2(260f, 62f));
+            var skipLabel = flow.PendingCardRewardSkipGold > 0
+                ? $"放弃剩余奖励，换得 {Mathf.CeilToInt(flow.PendingCardRewardSkipGold)} 金"
+                : "放弃剩余奖励";
+            var skip = CreateButton(skipLabel, uiRoot.transform, new Vector2(0.5f, 0.14f), new Vector2(320f, 64f));
             skip.onClick.AddListener(() =>
             {
                 flow.SkipCardRewardForGold();
@@ -706,6 +932,9 @@ namespace XTD.Presentation
             info.text = $"当前金币 {flow.CurrentRun.gold}。购买会移出当前货架；可以刷新商品、半价出售，或花金币净化移除 1 张牌。";
 
             var shopCards = flow.GenerateShopCards();
+            var buyTitle = CreateText("进货标题", uiRoot.transform, new Vector2(0.5f, 0.62f), new Vector2(1000f, 40f), 20, TextAnchor.MiddleCenter);
+            buyTitle.text = "货架陈列";
+            buyTitle.color = new Color(1f, 0.88f, 0.54f, 0.96f);
             if (shopCards.Count == 0)
             {
                 var empty = CreateText("商店售罄", uiRoot.transform, new Vector2(0.5f, 0.56f), new Vector2(720f, 70f), 24, TextAnchor.MiddleCenter);
@@ -716,8 +945,19 @@ namespace XTD.Presentation
             for (var i = 0; i < shopCards.Count; i++)
             {
                 var card = shopCards[i];
-                var button = CreateButton($"{card.displayName}\n{CardTypeName(card.type)} Lv.{card.level}\n买 {flow.CardBuyPrice(card)} 金币", uiRoot.transform, new Vector2(0.5f, 0.56f), new Vector2(190f, 118f), new Vector2(-390f + i * 195f, 0f));
-                button.GetComponent<Image>().color = CardPanelColor(card.type);
+                var buyPrice = flow.CardBuyPrice(card);
+                var canBuy = flow.CurrentRun.gold >= buyPrice;
+                var button = CreateCardChoiceCard(
+                    card,
+                    uiRoot.transform,
+                    new Vector2(0.5f, 0.49f),
+                    new Vector2(188f, 246f),
+                    new Vector2(-392f + i * 196f, 0f),
+                    "商店",
+                    canBuy ? "购入卡组" : "金币不足",
+                    $"{buyPrice} 金",
+                    null,
+                    canBuy);
                 button.onClick.AddListener(() =>
                 {
                     flow.BuyCard(card);
@@ -744,13 +984,22 @@ namespace XTD.Presentation
                 .OrderBy(entry => entry.Card.type)
                 .ThenBy(entry => entry.Card.cost)
                 .ThenBy(entry => entry.Card.displayName)
-                .Take(7)
+                .Take(6)
                 .ToList();
             for (var i = 0; i < sellCards.Count; i++)
             {
                 var entry = sellCards[i];
-                var button = CreateButton($"{entry.Card.displayName} x{entry.Count}\n卖 {Mathf.Max(1, flow.CardBuyPrice(entry.Card) / 2)}", uiRoot.transform, new Vector2(0.5f, 0.34f), new Vector2(178f, 78f), new Vector2(-535f + i * 178f, 0f));
-                button.GetComponent<Image>().color = WithAlpha(CardPanelColor(entry.Card.type), 0.86f);
+                var sellPrice = Mathf.Max(1, flow.CardBuyPrice(entry.Card) / 2);
+                var button = CreateCardChoiceCard(
+                    entry.Card,
+                    uiRoot.transform,
+                    new Vector2(0.5f, 0.27f),
+                    new Vector2(160f, 176f),
+                    new Vector2(-430f + i * 172f, 0f),
+                    "出售",
+                    "卖出一张",
+                    $"+{sellPrice} 金",
+                    $"现有 {entry.Count} 张\n{entry.Card.description}");
                 button.onClick.AddListener(() =>
                 {
                     flow.SellCard(entry.Id);
@@ -764,15 +1013,22 @@ namespace XTD.Presentation
                 : "净化移除：本次不可用，可能已使用、金币不足或卡组过薄";
             removeTitle.color = new Color(0.95f, 0.90f, 0.78f, 0.94f);
 
-            var removeCards = sellCards.Take(5).ToList();
+            var removeCards = sellCards.Take(4).ToList();
             for (var i = 0; i < removeCards.Count; i++)
             {
                 var entry = removeCards[i];
-                var button = CreateButton($"{entry.Card.displayName}\n净化", uiRoot.transform, new Vector2(0.5f, 0.185f), new Vector2(178f, 64f), new Vector2(-356f + i * 178f, 0f));
-                button.GetComponent<Image>().color = flow.CanRemoveCardAtShop && flow.CurrentRun.gold >= flow.ShopRemoveCost
-                    ? new Color(0.16f, 0.10f, 0.19f, 0.92f)
-                    : new Color(0.08f, 0.08f, 0.08f, 0.66f);
-                button.interactable = flow.CanRemoveCardAtShop;
+                var canRemove = flow.CanRemoveCardAtShop && flow.CurrentRun.gold >= flow.ShopRemoveCost;
+                var button = CreateCardChoiceCard(
+                    entry.Card,
+                    uiRoot.transform,
+                    new Vector2(0.5f, 0.11f),
+                    new Vector2(168f, 148f),
+                    new Vector2(-276f + i * 184f, 0f),
+                    "净化",
+                    canRemove ? "移出卡组" : "当前不可用",
+                    $"{flow.ShopRemoveCost} 金",
+                    entry.Card.description,
+                    canRemove);
                 button.onClick.AddListener(() =>
                 {
                     flow.RemoveCardAtShop(entry.Id);
@@ -780,8 +1036,7 @@ namespace XTD.Presentation
                 });
             }
 
-            var leave = CreateButton("离开商店", uiRoot.transform, new Vector2(0.5f, 0.19f), new Vector2(260f, 66f));
-            leave.GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, -92f);
+            var leave = CreateButton("离开商店", uiRoot.transform, new Vector2(0.5f, 0.045f), new Vector2(260f, 60f));
             leave.onClick.AddListener(() =>
             {
                 flow.LeaveShop();
@@ -794,7 +1049,18 @@ namespace XTD.Presentation
             var info = CreateText("休息说明", uiRoot.transform, new Vector2(0.5f, 0.69f), new Vector2(1000f, 52f), 22, TextAnchor.MiddleCenter);
             info.text = "选择回血，或三张同级同名卡牌合成一张高一级卡牌。每次休息只能做一件事。";
 
-            var heal = CreateButton("随机回血 10%-30%", uiRoot.transform, new Vector2(0.5f, 0.57f), new Vector2(300f, 74f));
+            var heal = CreateFeatureChoiceCard(
+                "调息回神",
+                "休整",
+                "恢复 10% - 30% 生命。若持有太极图残卷，恢复幅度还会更高。",
+                "静坐疗伤",
+                LoadNodeSprite(MapNodeType.Rest),
+                uiRoot.transform,
+                new Vector2(0.5f, 0.52f),
+                new Vector2(260f, 300f),
+                new Vector2(-360f, 0f),
+                new Color(0.12f, 0.28f, 0.22f, 0.96f),
+                "10% - 30%");
             heal.onClick.AddListener(() =>
             {
                 flow.TakeRestHeal();
@@ -804,12 +1070,22 @@ namespace XTD.Presentation
             var groups = flow.UpgradableCardGroups().ToList();
             var label = CreateText("合成标题", uiRoot.transform, new Vector2(0.5f, 0.46f), new Vector2(1000f, 42f), 20, TextAnchor.MiddleCenter);
             label.text = groups.Count > 0 ? "可合成卡牌" : "当前没有三张同级同名卡牌";
+            label.color = new Color(1f, 0.88f, 0.54f, 0.96f);
 
             for (var i = 0; i < groups.Count && i < 5; i++)
             {
                 var group = groups[i];
                 var card = catalog.FindCard(group.Key);
-                var button = CreateButton($"{card.displayName}\n三合一", uiRoot.transform, new Vector2(0.5f, 0.35f), new Vector2(190f, 80f), new Vector2(-390f + i * 195f, 0f));
+                var button = CreateCardChoiceCard(
+                    card,
+                    uiRoot.transform,
+                    new Vector2(0.5f, 0.27f),
+                    new Vector2(188f, 244f),
+                    new Vector2(-172f + i * 192f, 0f),
+                    "合成",
+                    "三合一升阶",
+                    "Lv.+1",
+                    $"消耗 3 张同名同级卡\n{card.description}");
                 button.onClick.AddListener(() =>
                 {
                     flow.UpgradeCardsAtRest(group.Key);
@@ -1428,7 +1704,7 @@ namespace XTD.Presentation
 
         private static void EnsureEventSystem()
         {
-            var eventSystem = UnityEngine.Object.FindFirstObjectByType<EventSystem>();
+            var eventSystem = UnityEngine.Object.FindAnyObjectByType<EventSystem>();
             if (eventSystem == null)
             {
                 eventSystem = new GameObject("EventSystem").AddComponent<EventSystem>();

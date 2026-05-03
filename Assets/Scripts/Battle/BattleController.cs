@@ -1,10 +1,15 @@
+using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using UnityEngine;
 using XTD.Cards;
 using XTD.Content;
 using XTD.Flow;
 using XTD.Presentation;
+using Random = UnityEngine.Random;
 
 namespace XTD.Battle
 {
@@ -13,6 +18,7 @@ namespace XTD.Battle
     {
         private const string BattleMusicResourcePath = "Audio/BGM/hyoshi_action_track_2";
         private const string BattleMusicAssetPath = "Assets/Resources/Audio/BGM/hyoshi_action_track_2.ogg";
+        private const string BattleMusicStreamingRelativePath = "Audio/BGM/hyoshi_action_track_2.ogg";
         private const string ProjectileResourcePath = "Art/AI/FX/projectile_spirit_arrow";
         private const string HitEffectResourcePath = "Art/AI/FX/fx_hit_jade_spark";
         private const string SpellImpactResourcePath = "Art/AI/FX/fx_samadhi_fire_impact";
@@ -20,6 +26,8 @@ namespace XTD.Battle
         private const string SummonerDivineEffectResourcePath = "Art/AI/FX/fx_divine_summon_gate";
         private const string ThunderDivineEffectResourcePath = "Art/AI/FX/fx_divine_thunder_fire";
         private const float DivinePowerManaCost = 7f;
+        private const float ThunderMageSpellRadiusMultiplier = 1.35f;
+        private const int CloudBannerStructureCostReduction = 2;
         private const float StructurePlacementRadius = 0.62f;
         private const float StructurePlacementMinDistance = 1.18f;
         private const float StructurePlacementSpacing = 1.32f;
@@ -99,7 +107,10 @@ namespace XTD.Battle
         private AudioClip hitClip;
         private AudioClip victoryClip;
         private AudioClip defeatClip;
+        private AudioClip fallbackBattleMusicClip;
+        private Coroutine battleMusicLoadRoutine;
         private float hitSfxCooldown;
+        private int temporaryStructureCostReduction;
         private int defeatedEnemyCount;
 
         public BattleOutcome Outcome { get; private set; } = BattleOutcome.Running;
@@ -114,6 +125,8 @@ namespace XTD.Battle
         public int MoralePendingSoldiers => morale.PendingSoldiers;
         public int MoraleSoldiersPerCharge => morale.SoldiersPerCharge;
         public bool NextCardWillUseMorale => morale.Charges > 0;
+        public int PendingStructureCostReduction => temporaryStructureCostReduction;
+        public bool HasPendingStructureDiscount => temporaryStructureCostReduction > 0;
         public DeckRuntime Deck => deck;
         public float BattleMidY => (playerBaseY + enemyBaseY) * 0.5f;
         public bool HasEnemyBase => encounter == null || encounter.coreEnemy == null;
@@ -142,6 +155,13 @@ namespace XTD.Battle
         public float DivinePowerCost => DivinePowerManaCost;
         public bool CanReleaseDivinePower => Outcome == BattleOutcome.Running && mana >= DivinePowerManaCost;
         public float DivinePowerCharge => Mathf.Clamp01(mana / DivinePowerManaCost);
+        public string DivinePowerName => CurrentHeroClassForBattle() switch
+        {
+            HeroClassType.SpiritSummoner => "万灵开阵",
+            HeroClassType.ThunderMage => "九霄雷火",
+            _ => "边境战令"
+        };
+
         public IReadOnlyList<string> EnemySkillHints => BuildEnemySkillHints();
 
         private void Awake()
@@ -167,7 +187,7 @@ namespace XTD.Battle
             damageNumberPool = new ComponentPool<DamageNumberView>(CreateDamageNumberInstance);
             effectPool = new ComponentPool<SimpleEffectView>(CreateEffectInstance);
 
-            ui = FindFirstObjectByType<BattleUiController>();
+            ui = FindAnyObjectByType<BattleUiController>();
             if (ui == null)
             {
                 ui = BattleUiController.CreateDefault();
@@ -197,6 +217,7 @@ namespace XTD.Battle
                 tickAccumulator -= fixedDelta;
             }
 
+            CleanupUnavailableHeroCards();
             ui.Refresh();
         }
 
@@ -225,6 +246,7 @@ namespace XTD.Battle
             manaSuppressionTimer = 0f;
             floorAffixTimer = 3.0f;
             hitSfxCooldown = 0f;
+            temporaryStructureCostReduction = 0;
             defeatedEnemyCount = 0;
             StartBattleMusic();
             var playerMaxHp = CurrentPlayerBattleMaxHp();
@@ -282,8 +304,15 @@ namespace XTD.Battle
                 return false;
             }
 
-            mana -= EffectiveCardCost(card);
+            var cardCost = EffectiveCardCost(card);
+            var consumesCloudBannerDiscount = card.type == CardType.Structure && temporaryStructureCostReduction > 0;
+            mana -= cardCost;
             deck.Play(card);
+            if (consumesCloudBannerDiscount)
+            {
+                temporaryStructureCostReduction = 0;
+            }
+
             ResolveCard(card, strengthened, targetPosition);
             PlayOneShot(ref playCardClip, 540f, 0.06f);
             if (strengthened)
@@ -331,6 +360,11 @@ namespace XTD.Battle
             }
 
             var modifier = flow != null && flow.HasActiveRun ? flow.CardCostModifier(card) : 0;
+            if (card.type == CardType.Structure && temporaryStructureCostReduction > 0)
+            {
+                modifier -= temporaryStructureCostReduction;
+            }
+
             return Mathf.Max(0, card.cost + modifier);
         }
 
@@ -421,7 +455,7 @@ namespace XTD.Battle
 
                 if (effect.effectType is EffectType.Damage or EffectType.AreaDamage or EffectType.Slow or EffectType.Stun or EffectType.Burn or EffectType.Poison or EffectType.Knockback)
                 {
-                    radius = Mathf.Max(radius, effect.radius);
+                    radius = Mathf.Max(radius, EffectiveEffectRadiusForCard(card, effect, true));
                 }
             }
 
@@ -589,6 +623,7 @@ namespace XTD.Battle
             if (unit != null && unit.Faction == Faction.Player && unit.Definition != null && unit.Definition.role == UnitRole.Hero)
             {
                 defeatedHeroUnitIds.Add(unit.Definition.id);
+                ExhaustHeroCardsForBattle(unit.Definition.id);
                 ui?.ShowNotice($"{unit.Definition.displayName} 已阵亡，本场不能再次召唤", 1.8f);
             }
         }
@@ -655,7 +690,7 @@ namespace XTD.Battle
             }
 
             mana -= DivinePowerManaCost;
-            var heroClass = flow != null && flow.HasActiveRun ? flow.CurrentHeroClass : HeroClassType.BorderCommander;
+            var heroClass = CurrentHeroClassForBattle();
             switch (heroClass)
             {
                 case HeroClassType.SpiritSummoner:
@@ -1064,6 +1099,12 @@ namespace XTD.Battle
                 return;
             }
 
+            if (card.id == "card_cloud_banner")
+            {
+                temporaryStructureCostReduction = Mathf.Max(temporaryStructureCostReduction, CloudBannerStructureCostReduction);
+                ui.ShowNotice($"流云军令：下一张建筑牌费用 -{CloudBannerStructureCostReduction}", 1.8f);
+            }
+
             var spawnedSoldiers = 0;
             var structureIndex = 0;
             var totalStructures = StructureSpawnCount(card);
@@ -1122,7 +1163,12 @@ namespace XTD.Battle
 
             foreach (var effect in card.effects)
             {
-                ResolveEffect(effect, strengthened, targetPosition, card.releaseRule == CardReleaseRule.Anywhere);
+                ResolveEffect(card, effect, strengthened, targetPosition, card.releaseRule == CardReleaseRule.Anywhere);
+            }
+
+            if (card.type == CardType.Hero)
+            {
+                ExhaustHeroCardsForBattle(card);
             }
         }
 
@@ -1196,6 +1242,78 @@ namespace XTD.Battle
                 CardType.Tactic => $"士气强化：{card.displayName} 效果提高",
                 _ => $"士气强化：{card.displayName}"
             };
+        }
+
+        private void ExhaustHeroCardsForBattle(CardDefinition sourceCard)
+        {
+            if (sourceCard == null || sourceCard.type != CardType.Hero)
+            {
+                return;
+            }
+
+            foreach (var spawn in sourceCard.unitSpawns)
+            {
+                if (spawn?.unit == null || spawn.unit.role != UnitRole.Hero || string.IsNullOrWhiteSpace(spawn.unit.id))
+                {
+                    continue;
+                }
+
+                ExhaustHeroCardsForBattle(spawn.unit.id);
+            }
+        }
+
+        private void ExhaustHeroCardsForBattle(string heroUnitId)
+        {
+            if (deck == null || string.IsNullOrWhiteSpace(heroUnitId))
+            {
+                return;
+            }
+
+            deck.ExhaustCards(card => HeroCardMatchesUnit(card, heroUnitId));
+        }
+
+        private static bool HeroCardMatchesUnit(CardDefinition card, string heroUnitId)
+        {
+            if (card == null || card.type != CardType.Hero || string.IsNullOrWhiteSpace(heroUnitId))
+            {
+                return false;
+            }
+
+            foreach (var spawn in card.unitSpawns)
+            {
+                if (spawn?.unit == null || spawn.unit.role != UnitRole.Hero)
+                {
+                    continue;
+                }
+
+                if (spawn.unit.id == heroUnitId)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private void CleanupUnavailableHeroCards()
+        {
+            if (deck == null)
+            {
+                return;
+            }
+
+            foreach (var heroUnitId in defeatedHeroUnitIds)
+            {
+                ExhaustHeroCardsForBattle(heroUnitId);
+            }
+
+            foreach (var activeHeroUnitId in activeUnits
+                         .Where(unit => unit != null && unit.IsAlive && unit.Faction == Faction.Player && unit.Definition != null && unit.Definition.role == UnitRole.Hero)
+                         .Select(unit => unit.Definition.id)
+                         .Distinct())
+            {
+                ExhaustHeroCardsForBattle(activeHeroUnitId);
+            }
         }
 
         private IReadOnlyList<string> BuildEnemySkillHints()
@@ -1462,15 +1580,21 @@ namespace XTD.Battle
             return unit;
         }
 
-        private void ResolveEffect(BattleEffectDefinition effect, bool strengthened, Vector3 targetPosition, bool usePlacementTarget)
+        private void ResolveEffect(CardDefinition sourceCard, BattleEffectDefinition effect, bool strengthened, Vector3 targetPosition, bool usePlacementTarget)
         {
+            if (effect == null)
+            {
+                return;
+            }
+
             var value = strengthened ? effect.value * 1.5f : effect.value;
             var duration = strengthened ? effect.duration * 1.25f : effect.duration;
+            var radius = EffectiveEffectRadiusForCard(sourceCard, effect, usePlacementTarget);
             var usesPlacementTargets = usePlacementTarget && effect.effectType is EffectType.Damage or EffectType.AreaDamage or EffectType.Slow or EffectType.Stun or EffectType.Burn or EffectType.Poison or EffectType.Knockback;
             var isPlacedDamage = usesPlacementTargets && (effect.effectType == EffectType.Damage || effect.effectType == EffectType.AreaDamage);
             var targets = usesPlacementTargets
-                ? SelectTargetsNearPosition(effect.targetRule, targetPosition, effect.radius, effect.effectType)
-                : SelectTargets(effect.targetRule, effect.radius);
+                ? SelectTargetsNearPosition(effect.targetRule, targetPosition, radius, effect.effectType)
+                : SelectTargets(effect.targetRule, radius);
 
             switch (effect.effectType)
             {
@@ -1487,7 +1611,7 @@ namespace XTD.Battle
                         target.TakeDamage(value);
                     }
 
-                    if (isPlacedDamage && targets.Count == 0 && IsEnemyBasePoint(targetPosition, effect.radius))
+                    if (isPlacedDamage && targets.Count == 0 && IsEnemyBasePoint(targetPosition, radius))
                     {
                         DamageEnemyBase(value * 0.5f);
                     }
@@ -1587,6 +1711,34 @@ namespace XTD.Battle
             }
 
             return targets;
+        }
+
+        private float EffectiveEffectRadiusForCard(CardDefinition sourceCard, BattleEffectDefinition effect, bool usePlacementTarget)
+        {
+            if (effect == null)
+            {
+                return 0f;
+            }
+
+            var radius = effect.radius;
+            if (!usePlacementTarget || sourceCard == null || CurrentHeroClassForBattle() != HeroClassType.ThunderMage)
+            {
+                return radius;
+            }
+
+            if (sourceCard.type is not (CardType.Spell or CardType.Debuff))
+            {
+                return radius;
+            }
+
+            return effect.effectType is EffectType.Damage or EffectType.AreaDamage or EffectType.Slow or EffectType.Stun or EffectType.Burn or EffectType.Poison or EffectType.Knockback
+                ? radius * ThunderMageSpellRadiusMultiplier
+                : radius;
+        }
+
+        private HeroClassType CurrentHeroClassForBattle()
+        {
+            return flow != null && flow.HasActiveRun ? flow.CurrentHeroClass : HeroClassType.BorderCommander;
         }
 
         private List<BattleUnit> SelectTargets(TargetRule targetRule, float radius)
@@ -1865,34 +2017,260 @@ namespace XTD.Battle
                 return;
             }
 
-            var usingFallbackMusic = false;
-            battleMusicClip ??= LoadBattleMusicClip();
-            if (battleMusicClip == null)
-            {
-                battleMusicClip = CreateFallbackMusicClip();
-                usingFallbackMusic = true;
-                Debug.Log("神魔镇荒外部 BGM 暂未加载，使用程序生成的临时战斗 BGM。");
-            }
+            StopBattleMusic();
 
-            if (!EnsureAudioClipData(battleMusicClip, "战斗 BGM"))
+            battleMusicClip ??= LoadBattleMusicClip();
+            if (TryPlayBattleMusicClip(battleMusicClip, false))
             {
                 return;
             }
 
-            musicSource.clip = battleMusicClip;
-            musicSource.volume = usingFallbackMusic ? Mathf.Max(battleMusicVolume, 0.38f) : battleMusicVolume;
-            if (!musicSource.isPlaying)
+            if (battleMusicLoadRoutine != null)
             {
-                musicSource.Play();
+                StopCoroutine(battleMusicLoadRoutine);
             }
+
+            battleMusicLoadRoutine = StartCoroutine(LoadBattleMusicFromStreamingAssets());
         }
 
         private void StopBattleMusic()
         {
+            if (battleMusicLoadRoutine != null)
+            {
+                StopCoroutine(battleMusicLoadRoutine);
+                battleMusicLoadRoutine = null;
+            }
+
             if (musicSource != null && musicSource.isPlaying)
             {
                 musicSource.Stop();
             }
+        }
+
+        private bool TryPlayBattleMusicClip(AudioClip clip, bool usingFallbackMusic)
+        {
+            if (clip == null || musicSource == null)
+            {
+                return false;
+            }
+
+            if (!EnsureAudioClipData(clip, "战斗 BGM"))
+            {
+                return false;
+            }
+
+            musicSource.clip = clip;
+            musicSource.volume = usingFallbackMusic ? Mathf.Max(battleMusicVolume, 0.38f) : battleMusicVolume;
+            musicSource.Play();
+            return true;
+        }
+
+        private IEnumerator LoadBattleMusicFromStreamingAssets()
+        {
+            var musicUrl = BattleMusicStreamingUrl();
+            if (!string.IsNullOrWhiteSpace(musicUrl))
+            {
+                var request = CreateStreamingAudioRequest(musicUrl);
+                if (request != null)
+                {
+                    var asyncOp = SendStreamingAudioRequest(request);
+                    if (asyncOp != null)
+                    {
+                        yield return asyncOp;
+
+                        if (StreamingAudioRequestSucceeded(request))
+                        {
+                            var clip = ExtractAudioClipFromStreamingRequest(request);
+                            if (clip != null)
+                            {
+                                clip.name = "hyoshi_action_track_2_streaming";
+                                battleMusicClip = clip;
+                                if (TryPlayBattleMusicClip(battleMusicClip, false))
+                                {
+                                    Debug.Log("神魔镇荒使用 StreamingAssets 加载战斗 BGM。");
+                                    DisposeStreamingAudioRequest(request);
+                                    battleMusicLoadRoutine = null;
+                                    yield break;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            Debug.LogWarning($"神魔镇荒未能从 StreamingAssets 加载战斗 BGM：{StreamingAudioRequestError(request)}");
+                        }
+                    }
+
+                    DisposeStreamingAudioRequest(request);
+                }
+            }
+
+            fallbackBattleMusicClip ??= CreateFallbackMusicClip();
+            if (TryPlayBattleMusicClip(fallbackBattleMusicClip, true))
+            {
+                Debug.LogWarning("神魔镇荒外部 BGM 未加载成功，使用程序生成的临时战斗 BGM。");
+            }
+
+            battleMusicLoadRoutine = null;
+        }
+
+        private static string BattleMusicStreamingUrl()
+        {
+            var basePath = Application.streamingAssetsPath;
+            if (string.IsNullOrWhiteSpace(basePath))
+            {
+                return string.Empty;
+            }
+
+            if (basePath.Contains("://", StringComparison.Ordinal))
+            {
+                return $"{basePath.TrimEnd('/')}/{BattleMusicStreamingRelativePath}";
+            }
+
+            var filePath = Path.Combine(basePath, BattleMusicStreamingRelativePath);
+            return File.Exists(filePath) ? new Uri(filePath).AbsoluteUri : string.Empty;
+        }
+
+        private static object CreateStreamingAudioRequest(string musicUrl)
+        {
+            var multimediaType = FindUnityType(
+                "UnityEngine.Networking.UnityWebRequestMultimedia",
+                "UnityEngine.UnityWebRequestAudioModule",
+                "UnityEngine.UnityWebRequestModule");
+            if (multimediaType == null)
+            {
+                return null;
+            }
+
+            var method = multimediaType
+                .GetMethods(BindingFlags.Public | BindingFlags.Static)
+                .FirstOrDefault(candidate =>
+                {
+                    if (candidate.Name != "GetAudioClip")
+                    {
+                        return false;
+                    }
+
+                    var parameters = candidate.GetParameters();
+                    return parameters.Length == 2
+                           && parameters[0].ParameterType == typeof(string)
+                           && parameters[1].ParameterType == typeof(AudioType);
+                });
+            return method?.Invoke(null, new object[] { musicUrl, AudioType.OGGVORBIS });
+        }
+
+        private static AsyncOperation SendStreamingAudioRequest(object request)
+        {
+            return request?
+                .GetType()
+                .GetMethod("SendWebRequest", BindingFlags.Instance | BindingFlags.Public)?
+                .Invoke(request, null) as AsyncOperation;
+        }
+
+        private static bool StreamingAudioRequestSucceeded(object request)
+        {
+            var result = request?
+                .GetType()
+                .GetProperty("result", BindingFlags.Instance | BindingFlags.Public)?
+                .GetValue(request);
+            return string.Equals(result?.ToString(), "Success", StringComparison.Ordinal);
+        }
+
+        private static string StreamingAudioRequestError(object request)
+        {
+            return request?
+                       .GetType()
+                       .GetProperty("error", BindingFlags.Instance | BindingFlags.Public)?
+                       .GetValue(request) as string
+                   ?? "未知错误";
+        }
+
+        private static AudioClip ExtractAudioClipFromStreamingRequest(object request)
+        {
+            if (request == null)
+            {
+                return null;
+            }
+
+            var downloadHandlerAudioClipType = FindUnityType(
+                "UnityEngine.Networking.DownloadHandlerAudioClip",
+                "UnityEngine.UnityWebRequestAudioModule",
+                "UnityEngine.UnityWebRequestModule");
+            if (downloadHandlerAudioClipType == null)
+            {
+                return null;
+            }
+
+            var contentMethod = downloadHandlerAudioClipType
+                .GetMethods(BindingFlags.Public | BindingFlags.Static)
+                .FirstOrDefault(candidate =>
+                {
+                    if (candidate.Name != "GetContent")
+                    {
+                        return false;
+                    }
+
+                    var parameters = candidate.GetParameters();
+                    return parameters.Length == 1 && parameters[0].ParameterType.IsInstanceOfType(request);
+                });
+            if (contentMethod != null)
+            {
+                return contentMethod.Invoke(null, new[] { request }) as AudioClip;
+            }
+
+            var downloadHandler = request
+                .GetType()
+                .GetProperty("downloadHandler", BindingFlags.Instance | BindingFlags.Public)?
+                .GetValue(request);
+            return downloadHandler?
+                .GetType()
+                .GetProperty("audioClip", BindingFlags.Instance | BindingFlags.Public)?
+                .GetValue(downloadHandler) as AudioClip;
+        }
+
+        private static void DisposeStreamingAudioRequest(object request)
+        {
+            if (request is IDisposable disposable)
+            {
+                disposable.Dispose();
+                return;
+            }
+
+            request?
+                .GetType()
+                .GetMethod("Dispose", BindingFlags.Instance | BindingFlags.Public)?
+                .Invoke(request, null);
+        }
+
+        private static Type FindUnityType(string typeName, params string[] assemblyNames)
+        {
+            foreach (var assemblyName in assemblyNames)
+            {
+                var qualifiedName = $"{typeName}, {assemblyName}";
+                var type = Type.GetType(qualifiedName, false);
+                if (type != null)
+                {
+                    return type;
+                }
+
+                try
+                {
+                    var assembly = Assembly.Load(assemblyName);
+                    type = assembly.GetType(typeName, false);
+                    if (type != null)
+                    {
+                        return type;
+                    }
+                }
+                catch
+                {
+                    // Ignore and continue to fallback options.
+                }
+            }
+
+            return AppDomain.CurrentDomain
+                .GetAssemblies()
+                .Select(assembly => assembly.GetType(typeName, false))
+                .FirstOrDefault(type => type != null);
         }
 
         private static AudioClip LoadBattleMusicClip()

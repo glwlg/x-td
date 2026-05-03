@@ -227,23 +227,24 @@ namespace XTD.Flow
             }
 
             CurrentRun.playerHp = Mathf.Max(1f, remainingPlayerHp);
+            var resolvedNode = pendingNode;
             var encounter = PendingEncounterOrDefault(Catalog);
             var rewardText = pendingBattleSuppressRewards
                 ? "凶阵被破，没有额外奖励。"
-                : GrantBattleRewards(pendingNode, encounter);
+                : GrantBattleRewards(resolvedNode, encounter);
 
             if (HasPendingCardReward)
             {
                 CurrentRun.lastMessage = rewardText + " 请选择卡牌奖励。";
-                AppendRunLog(rewardText);
+                AppendRunLog(rewardText, resolvedNode);
                 LoadMainMenu();
                 return;
             }
 
-            AdvanceAfterResolvedNode(pendingNode);
+            AdvanceAfterResolvedNode(resolvedNode);
             ClearPendingNode();
             CurrentRun.lastMessage = rewardText;
-            AppendRunLog(rewardText);
+            AppendRunLog(rewardText, resolvedNode);
             LoadMainMenu();
         }
 
@@ -490,7 +491,7 @@ namespace XTD.Flow
             if (CurrentRun.pendingCardRewardPickCount > 0 && CurrentRun.pendingCardRewardIds.Count > 0)
             {
                 CurrentRun.lastMessage = $"获得 {card.displayName}。还可以选择 {CurrentRun.pendingCardRewardPickCount} 张奖励卡。";
-                AppendRunLog($"获得卡牌：{card.displayName}。");
+                AppendRunLog($"获得卡牌：{card.displayName}。", pendingNode);
                 return;
             }
 
@@ -1182,15 +1183,16 @@ namespace XTD.Flow
             CurrentRun.pendingCardRewardIds.Clear();
             CurrentRun.pendingCardRewardPickCount = 0;
             CurrentRun.pendingCardRewardSkipGold = 0;
+            var resolvedNode = pendingNode;
 
             if (hasPendingNode)
             {
-                AdvanceAfterResolvedNode(pendingNode);
+                AdvanceAfterResolvedNode(resolvedNode);
                 ClearPendingNode();
             }
 
             CurrentRun.lastMessage = message;
-            AppendRunLog(message);
+            AppendRunLog(message, resolvedNode);
         }
 
         private void GrantGold(int amount)
@@ -1660,10 +1662,11 @@ namespace XTD.Flow
                 return;
             }
 
-            AdvanceAfterResolvedNode(pendingNode);
+            var resolvedNode = pendingNode;
+            AdvanceAfterResolvedNode(resolvedNode);
             ClearPendingNode();
             CurrentRun.lastMessage = message;
-            AppendRunLog(message);
+            AppendRunLog(message, resolvedNode);
         }
 
         private void AdvanceAfterResolvedNode(MapNodeRuntime node)
@@ -1733,12 +1736,30 @@ namespace XTD.Flow
 
         private void AppendRunLog(string message)
         {
+            AppendRunLog(message, CurrentRun != null ? CurrentRun.floor : 0, CurrentRun != null ? CurrentRun.row : 0);
+        }
+
+        private void AppendRunLog(string message, MapNodeRuntime resolvedNode)
+        {
+            if (resolvedNode == null)
+            {
+                AppendRunLog(message);
+                return;
+            }
+
+            AppendRunLog(message, resolvedNode.Floor, resolvedNode.Row);
+        }
+
+        private void AppendRunLog(string message, int floor, int row)
+        {
             if (CurrentRun == null || string.IsNullOrWhiteSpace(message))
             {
                 return;
             }
 
-            var stamp = $"迷宫 {CurrentRun.floor} · 房间 {CurrentRun.row}/10";
+            var logFloor = Mathf.Max(1, floor);
+            var logRow = Mathf.Clamp(row, 1, 10);
+            var stamp = $"迷宫 {logFloor} · 房间 {logRow}/10";
             CurrentRun.eventLog.Add($"{stamp}  {message}");
             while (CurrentRun.eventLog.Count > MaxRunLogEntries)
             {

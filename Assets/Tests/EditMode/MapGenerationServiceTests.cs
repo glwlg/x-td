@@ -14,9 +14,18 @@ namespace XTD.Tests
             var rows = service.Generate(123, 3, 10);
 
             Assert.That(rows.Count, Is.EqualTo(30));
-            foreach (var row in rows)
+            for (var index = 0; index < rows.Count; index++)
             {
-                Assert.That(row.Count, Is.InRange(2, 3));
+                var row = (index % 10) + 1;
+                var expectedCount = row is 1 or 5 or 10 ? 1 : -1;
+                if (expectedCount > 0)
+                {
+                    Assert.That(rows[index].Count, Is.EqualTo(expectedCount), $"row {row} should be fixed.");
+                }
+                else
+                {
+                    Assert.That(rows[index].Count, Is.InRange(2, 3), $"row {row} should have 2-3 rooms.");
+                }
             }
 
             Assert.That(rows[0], Has.All.Matches<MapNodeRuntime>(node => node.NodeType == MapNodeType.NormalMonster));

@@ -80,6 +80,25 @@ namespace XTD.Cards
             }
         }
 
+        public int ExhaustCards(Predicate<CardDefinition> match)
+        {
+            if (match == null)
+            {
+                return 0;
+            }
+
+            var removedFromHand = RemoveAll(hand, match);
+            var removed = removedFromHand;
+            removed += RemoveAll(cardPool, match);
+            removed += RemoveAll(usedPile, match);
+            if (removedFromHand > 0)
+            {
+                Draw(removedFromHand);
+            }
+
+            return removed;
+        }
+
         private void RecycleUsedIntoCardPool()
         {
             if (usedPile.Count == 0)
@@ -99,6 +118,23 @@ namespace XTD.Cards
                 var swapIndex = random.Next(i + 1);
                 (cards[i], cards[swapIndex]) = (cards[swapIndex], cards[i]);
             }
+        }
+
+        private static int RemoveAll(List<CardDefinition> cards, Predicate<CardDefinition> match)
+        {
+            var removed = 0;
+            for (var i = cards.Count - 1; i >= 0; i--)
+            {
+                if (!match(cards[i]))
+                {
+                    continue;
+                }
+
+                cards.RemoveAt(i);
+                removed++;
+            }
+
+            return removed;
         }
     }
 }
