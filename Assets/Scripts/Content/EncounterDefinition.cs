@@ -12,7 +12,7 @@ namespace XTD.Content
         public float interval = 1.2f;
     }
 
-    [CreateAssetMenu(menuName = "X-TD/Content/Encounter Definition", fileName = "EncounterDefinition")]
+    [CreateAssetMenu(menuName = "神魔镇荒/Content/Encounter Definition", fileName = "EncounterDefinition")]
     public sealed class EncounterDefinition : ScriptableObject
     {
         public string id;

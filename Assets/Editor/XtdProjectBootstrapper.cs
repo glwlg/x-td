@@ -1,6 +1,8 @@
 using System;
 using System.IO;
 using UnityEditor;
+using UnityEditor.Build;
+using UnityEditor.Build.Reporting;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -27,18 +29,20 @@ namespace XTD.Editor
         private const string AiUiRoot = AiArtRoot + "/UI";
         private const string AiNodeIconRoot = AiUiRoot + "/Nodes";
         private const string AiArtifactIconRoot = AiUiRoot + "/Artifacts";
+        private const string ResourcesRoot = "Assets/Resources";
+        private const string ResourcesAiArtRoot = ResourcesRoot + "/Art/AI";
         private const string BattleMusicAssetPath = "Assets/Resources/Audio/BGM/hyoshi_action_track_2.ogg";
         private const string CatalogPath = ContentRoot + "/DemoContentCatalog.asset";
 
-        [MenuItem("X-TD/初始化/重建 MVP 原型内容")]
-        [MenuItem("X-TD/Bootstrap/Create MVP Project Content")]
+        [MenuItem("神魔镇荒/初始化/重建 MVP 原型内容")]
+        [MenuItem("神魔镇荒/Bootstrap/Create MVP Project Content")]
         public static void CreateMvpProjectContent()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode)
             {
                 if (!Application.isBatchMode)
                 {
-                    EditorUtility.DisplayDialog("X-TD", "正在播放时不能重建场景。请先停止 Play，再执行初始化菜单。", "知道了");
+                    EditorUtility.DisplayDialog("神魔镇荒", "正在播放时不能重建场景。请先停止 Play，再执行初始化菜单。", "知道了");
                 }
 
                 return;
@@ -48,18 +52,18 @@ namespace XTD.Editor
             PrepareAiSprites();
             var catalog = CreateCatalogAsset();
             CreateBootScene();
-            CreateMainMenuScene();
+            CreateMainMenuScene(catalog);
             CreateBattlePrototypeScene(catalog);
             UpdateBuildSettings();
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             if (!Application.isBatchMode)
             {
-                EditorUtility.DisplayDialog("X-TD", "MVP 原型内容和场景已重建。请打开 BattlePrototype 场景并点击 Play。", "知道了");
+                EditorUtility.DisplayDialog("神魔镇荒", "MVP 原型内容和场景已重建。请打开 BattlePrototype 场景并点击 Play。", "知道了");
             }
         }
 
-        [MenuItem("X-TD/验证/MVP 内容校验")]
+        [MenuItem("神魔镇荒/验证/MVP 内容校验")]
         public static void ValidateMvpContent()
         {
             var catalog = AssetDatabase.LoadAssetAtPath<ContentCatalog>(CatalogPath);
@@ -84,8 +88,17 @@ namespace XTD.Editor
 
             if (!Application.isBatchMode)
             {
-                EditorUtility.DisplayDialog("X-TD MVP 校验", message, "知道了");
+                EditorUtility.DisplayDialog("神魔镇荒 MVP 校验", message, "知道了");
             }
+        }
+
+        [MenuItem("神魔镇荒/打包/同步 Resources 资源")]
+        public static void PrepareBuildResources()
+        {
+            EnsureFolders();
+            PrepareAiSprites();
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
         }
 
         private static void EnsureFolders()
@@ -103,6 +116,12 @@ namespace XTD.Editor
             Directory.CreateDirectory(AiUiRoot);
             Directory.CreateDirectory(AiNodeIconRoot);
             Directory.CreateDirectory(AiArtifactIconRoot);
+            Directory.CreateDirectory(ResourcesAiArtRoot);
+            Directory.CreateDirectory(ResourcesAiArtRoot + "/Backgrounds");
+            Directory.CreateDirectory(ResourcesAiArtRoot + "/Battle");
+            Directory.CreateDirectory(ResourcesAiArtRoot + "/Cards");
+            Directory.CreateDirectory(ResourcesAiArtRoot + "/FX");
+            Directory.CreateDirectory(ResourcesAiArtRoot + "/UI");
         }
 
         private static ContentCatalog CreateCatalogAsset()
@@ -208,12 +227,49 @@ namespace XTD.Editor
                 return;
             }
 
+            SyncAiSpritesToResources();
+            AssetDatabase.Refresh();
+
             foreach (var path in Directory.GetFiles(AiArtRoot, "*.png", SearchOption.AllDirectories))
             {
                 var unityPath = path.Replace("\\", "/");
                 var ppu = unityPath.Contains("/Backgrounds/", StringComparison.Ordinal) ? 128f : 256f;
                 var filterMode = unityPath.Contains("/FX/", StringComparison.Ordinal) ? FilterMode.Bilinear : FilterMode.Bilinear;
                 PrepareSpriteImport(unityPath, ppu, filterMode);
+            }
+
+            if (Directory.Exists(ResourcesAiArtRoot))
+            {
+                foreach (var path in Directory.GetFiles(ResourcesAiArtRoot, "*.png", SearchOption.AllDirectories))
+                {
+                    var unityPath = path.Replace("\\", "/");
+                    var ppu = unityPath.Contains("/Backgrounds/", StringComparison.Ordinal) ? 128f : 256f;
+                    var filterMode = unityPath.Contains("/FX/", StringComparison.Ordinal) ? FilterMode.Bilinear : FilterMode.Bilinear;
+                    PrepareSpriteImport(unityPath, ppu, filterMode);
+                }
+            }
+        }
+
+        private static void SyncAiSpritesToResources()
+        {
+            CopyPngFolder(AiBackgroundRoot, ResourcesAiArtRoot + "/Backgrounds");
+            CopyPngFolder(AiBattleRoot, ResourcesAiArtRoot + "/Battle");
+            CopyPngFolder(AiCardsRoot, ResourcesAiArtRoot + "/Cards");
+            CopyPngFolder(AiFxRoot, ResourcesAiArtRoot + "/FX");
+        }
+
+        private static void CopyPngFolder(string sourceRoot, string targetRoot)
+        {
+            if (!Directory.Exists(sourceRoot))
+            {
+                return;
+            }
+
+            Directory.CreateDirectory(targetRoot);
+            foreach (var sourcePath in Directory.GetFiles(sourceRoot, "*.png", SearchOption.TopDirectoryOnly))
+            {
+                var targetPath = Path.Combine(targetRoot, Path.GetFileName(sourcePath)).Replace("\\", "/");
+                File.Copy(sourcePath, targetPath, true);
             }
         }
 
@@ -327,11 +383,19 @@ namespace XTD.Editor
             EditorSceneManager.SaveScene(scene, SceneRoot + "/Boot.unity");
         }
 
-        private static void CreateMainMenuScene()
+        private static void CreateMainMenuScene(ContentCatalog catalog)
         {
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             CreateCamera();
             new GameObject("主菜单控制器").AddComponent<MainMenuController>();
+            var controller = UnityEngine.Object.FindAnyObjectByType<MainMenuController>();
+            if (controller != null)
+            {
+                var serialized = new SerializedObject(controller);
+                serialized.FindProperty("catalog").objectReferenceValue = catalog;
+                serialized.ApplyModifiedPropertiesWithoutUndo();
+            }
+
             CreateEventSystem();
             EditorSceneManager.SaveScene(scene, SceneRoot + "/MainMenu.unity");
         }
@@ -464,6 +528,16 @@ namespace XTD.Editor
             {
                 eventSystem.AddComponent<StandaloneInputModule>();
             }
+        }
+    }
+
+    public sealed class XtdBuildPreprocessor : IPreprocessBuildWithReport
+    {
+        public int callbackOrder => 0;
+
+        public void OnPreprocessBuild(BuildReport report)
+        {
+            XtdProjectBootstrapper.PrepareBuildResources();
         }
     }
 }

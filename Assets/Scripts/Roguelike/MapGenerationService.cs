@@ -6,25 +6,26 @@ namespace XTD.Roguelike
 {
     public sealed class MapGenerationService
     {
+        private const int SpecialStartRow = 6;
+        private const int SpecialEndRow = 9;
+
         public List<List<MapNodeRuntime>> Generate(int seed, int floors = 3, int rowsPerFloor = 10)
         {
             var random = new Random(seed);
             var result = new List<List<MapNodeRuntime>>();
             var nodeTypes = new List<List<MapNodeType>>();
 
+            var firstFloorHadShop = false;
             for (var floor = 1; floor <= floors; floor++)
             {
-                for (var row = 1; row <= rowsPerFloor; row++)
+                var forceShop = floor == 2 && !firstFloorHadShop;
+                var floorRows = GenerateFloorRows(random, floor, rowsPerFloor, forceShop);
+                if (floor == 1)
                 {
-                    var choices = random.Next(2, 4);
-                    var rowTypes = new List<MapNodeType>(choices);
-                    for (var i = 0; i < choices; i++)
-                    {
-                        rowTypes.Add(PickNodeType(random, floor, row, i));
-                    }
-
-                    nodeTypes.Add(rowTypes);
+                    firstFloorHadShop = ContainsNodeType(floorRows, MapNodeType.Shop);
                 }
+
+                nodeTypes.AddRange(floorRows);
             }
 
             for (var floor = 1; floor <= floors; floor++)
@@ -34,10 +35,13 @@ namespace XTD.Roguelike
                     var flatIndex = ((floor - 1) * rowsPerFloor) + (row - 1);
                     var rowTypes = nodeTypes[flatIndex];
                     var rowNodes = new List<MapNodeRuntime>(rowTypes.Count);
+                    var nextLinks = row < rowsPerFloor
+                        ? PickNextNodeIndices(random, rowTypes.Count, nodeTypes[flatIndex + 1].Count)
+                        : null;
                     for (var i = 0; i < rowTypes.Count; i++)
                     {
-                        var nextIndices = row < rowsPerFloor
-                            ? PickNextNodeIndices(i, rowTypes.Count, nodeTypes[flatIndex + 1].Count)
+                        IEnumerable<int> nextIndices = row < rowsPerFloor
+                            ? nextLinks[i]
                             : Array.Empty<int>();
                         rowNodes.Add(new MapNodeRuntime(floor, row, i, rowTypes[i], string.Empty, nextIndices));
                     }
@@ -49,32 +53,45 @@ namespace XTD.Roguelike
             return result;
         }
 
-        private static IReadOnlyList<int> PickNextNodeIndices(int nodeIndex, int currentCount, int nextCount)
+        private static List<List<MapNodeType>> GenerateFloorRows(Random random, int floor, int rowsPerFloor, bool forceShop)
         {
-            if (nextCount <= 0)
+            var rows = new List<List<MapNodeType>>(rowsPerFloor);
+            var specialByRow = PickFloorSpecialRows(random, floor, forceShop);
+            var lastSpecialIndex = -1;
+
+            for (var row = 1; row <= rowsPerFloor; row++)
             {
-                return Array.Empty<int>();
+                var fixedType = FixedNodeTypeForRow(floor, row);
+                var choices = fixedType.HasValue ? FixedNodeCountForRow(row) : random.Next(2, 4);
+                var rowTypes = new List<MapNodeType>(choices);
+                if (fixedType.HasValue || row < SpecialStartRow)
+                {
+                    var nodeType = fixedType ?? MapNodeType.NormalMonster;
+                    FillRow(rowTypes, choices, nodeType);
+                    rows.Add(rowTypes);
+                    continue;
+                }
+
+                FillRow(rowTypes, choices, MapNodeType.NormalMonster);
+                if (specialByRow.TryGetValue(row, out var specialType))
+                {
+                    var specialIndex = random.Next(choices);
+                    if (choices > 1 && specialIndex == lastSpecialIndex)
+                    {
+                        specialIndex = (specialIndex + random.Next(1, choices)) % choices;
+                    }
+
+                    rowTypes[specialIndex] = specialType;
+                    lastSpecialIndex = specialIndex;
+                }
+
+                rows.Add(rowTypes);
             }
 
-            var projected = currentCount <= 1
-                ? 0
-                : (int)Math.Round(nodeIndex * (nextCount - 1) / (double)(currentCount - 1));
-            projected = Math.Max(0, Math.Min(nextCount - 1, projected));
-
-            var result = new List<int> { projected };
-            if (nextCount > 2 && nodeIndex % 2 == 0 && projected + 1 < nextCount)
-            {
-                result.Add(projected + 1);
-            }
-            else if (nextCount > 2 && nodeIndex % 2 == 1 && projected - 1 >= 0)
-            {
-                result.Add(projected - 1);
-            }
-
-            return result;
+            return rows;
         }
 
-        private static MapNodeType PickNodeType(Random random, int floor, int row, int choiceIndex)
+        private static MapNodeType? FixedNodeTypeForRow(int floor, int row)
         {
             if (row == 1)
             {
@@ -91,36 +108,232 @@ namespace XTD.Roguelike
                 return floor == 3 ? MapNodeType.FinalBoss : MapNodeType.SmallBoss;
             }
 
-            if (row < 5)
+            return null;
+        }
+
+        private static int FixedNodeCountForRow(int row)
+        {
+            return row is 1 or 5 or 10 ? 1 : 2;
+        }
+
+        private static Dictionary<int, MapNodeType> PickFloorSpecialRows(Random random, int floor, bool forceShop)
+        {
+            var result = new Dictionary<int, MapNodeType>();
+            var counts = new Dictionary<MapNodeType, int>();
+            var maxSpecials = floor == 1 ? random.Next(2, 4) : random.Next(3, 5);
+
+            AddSpecial(random, result, counts, MapNodeType.Opportunity);
+            if (forceShop)
             {
-                return MapNodeType.NormalMonster;
+                AddSpecial(random, result, counts, MapNodeType.Shop);
             }
 
-            if (choiceIndex > 0)
+            while (result.Count < maxSpecials)
             {
-                return MapNodeType.NormalMonster;
-            }
-
-            if (row is >= 6 and <= 9)
-            {
-                var specialIndex = Math.Abs((floor - 1) * 4 + (row - 6)) % 5;
-                return specialIndex switch
+                var nextType = PickWeightedSpecialType(random, floor, counts);
+                if (nextType == MapNodeType.NormalMonster || !AddSpecial(random, result, counts, nextType))
                 {
-                    0 => MapNodeType.Shop,
-                    1 => MapNodeType.Rest,
-                    2 => MapNodeType.Opportunity,
-                    3 => MapNodeType.Artifact,
-                    _ => MapNodeType.Mystery
-                };
+                    break;
+                }
+            }
+
+            return result;
+        }
+
+        private static MapNodeType PickWeightedSpecialType(Random random, int floor, Dictionary<MapNodeType, int> counts)
+        {
+            var totalWeight = 0;
+            var choices = new[]
+            {
+                (type: MapNodeType.Opportunity, weight: CountOf(counts, MapNodeType.Opportunity) >= 2 ? 0 : floor == 1 ? 44 : 36),
+                (type: MapNodeType.Shop, weight: CountOf(counts, MapNodeType.Shop) >= 1 ? 0 : floor == 1 ? 18 : 22),
+                (type: MapNodeType.Rest, weight: CountOf(counts, MapNodeType.Rest) >= 1 ? 0 : floor == 1 ? 18 : 16),
+                (type: MapNodeType.Artifact, weight: CountOf(counts, MapNodeType.Artifact) >= 1 ? 0 : floor == 1 ? 8 : 17),
+                (type: MapNodeType.Mystery, weight: CountOf(counts, MapNodeType.Mystery) >= 1 ? 0 : floor == 1 ? 8 : 12)
+            };
+
+            foreach (var choice in choices)
+            {
+                totalWeight += choice.weight;
+            }
+
+            if (totalWeight <= 0)
+            {
+                return MapNodeType.NormalMonster;
+            }
+
+            var roll = random.Next(totalWeight);
+            foreach (var choice in choices)
+            {
+                if (choice.weight <= 0)
+                {
+                    continue;
+                }
+
+                if (roll < choice.weight)
+                {
+                    return choice.type;
+                }
+
+                roll -= choice.weight;
+            }
+
+            return MapNodeType.Opportunity;
+        }
+
+        private static bool AddSpecial(Random random, Dictionary<int, MapNodeType> result, Dictionary<MapNodeType, int> counts, MapNodeType nodeType)
+        {
+            var candidates = new List<int>();
+            for (var row = SpecialStartRow; row <= SpecialEndRow; row++)
+            {
+                if (!result.ContainsKey(row) && IsSpecialAllowedOnRow(nodeType, row))
+                {
+                    candidates.Add(row);
+                }
+            }
+
+            if (candidates.Count == 0)
+            {
+                return false;
+            }
+
+            var rowIndex = random.Next(candidates.Count);
+            result[candidates[rowIndex]] = nodeType;
+            counts[nodeType] = CountOf(counts, nodeType) + 1;
+            return true;
+        }
+
+        private static bool IsSpecialAllowedOnRow(MapNodeType nodeType, int row)
+        {
+            return nodeType switch
+            {
+                MapNodeType.Shop => row >= 8,
+                MapNodeType.Artifact => row >= 7,
+                MapNodeType.Mystery => row >= 7,
+                _ => row >= SpecialStartRow
+            };
+        }
+
+        private static int CountOf(Dictionary<MapNodeType, int> counts, MapNodeType nodeType)
+        {
+            return counts.TryGetValue(nodeType, out var count) ? count : 0;
+        }
+
+        private static bool ContainsNodeType(List<List<MapNodeType>> rows, MapNodeType nodeType)
+        {
+            foreach (var row in rows)
+            {
+                if (row.Contains(nodeType))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static void FillRow(List<MapNodeType> rowTypes, int choices, MapNodeType nodeType)
+        {
+            for (var i = 0; i < choices; i++)
+            {
+                rowTypes.Add(nodeType);
+            }
+        }
+
+        private static List<int>[] PickNextNodeIndices(Random random, int currentCount, int nextCount)
+        {
+            var links = new List<int>[currentCount];
+            for (var i = 0; i < currentCount; i++)
+            {
+                links[i] = new List<int>();
+            }
+
+            if (nextCount <= 0)
+            {
+                return links;
+            }
+
+            for (var nodeIndex = 0; nodeIndex < currentCount; nodeIndex++)
+            {
+                var projected = ProjectIndex(nodeIndex, currentCount, nextCount);
+                var main = JitterIndex(random, projected, nextCount);
+                AddUnique(links[nodeIndex], main);
+
+                if (nextCount > 1 && random.NextDouble() < 0.42)
+                {
+                    var side = random.Next(2) == 0 ? -1 : 1;
+                    var extra = main + side;
+                    if (extra < 0 || extra >= nextCount)
+                    {
+                        extra = main - side;
+                    }
+
+                    if (extra >= 0 && extra < nextCount)
+                    {
+                        AddUnique(links[nodeIndex], extra);
+                    }
+                }
+
+                CapFullFanOut(random, links[nodeIndex], nextCount);
+            }
+
+            for (var i = 0; i < links.Length; i++)
+            {
+                links[i].Sort();
+            }
+
+            return links;
+        }
+
+        private static void CapFullFanOut(Random random, List<int> link, int nextCount)
+        {
+            if (nextCount <= 1 || link.Count < nextCount)
+            {
+                return;
+            }
+
+            link.RemoveAt(random.Next(link.Count));
+            if (link.Count == 0)
+            {
+                link.Add(random.Next(nextCount));
+            }
+        }
+
+        private static int ProjectIndex(int index, int sourceCount, int targetCount)
+        {
+            if (targetCount <= 1 || sourceCount <= 1)
+            {
+                return 0;
+            }
+
+            var projected = (int)Math.Round(index * (targetCount - 1) / (double)(sourceCount - 1));
+            return Math.Max(0, Math.Min(targetCount - 1, projected));
+        }
+
+        private static int JitterIndex(Random random, int projected, int count)
+        {
+            if (count <= 1)
+            {
+                return 0;
             }
 
             var roll = random.NextDouble();
-            if (roll < 0.45) return MapNodeType.NormalMonster;
-            if (roll < 0.58) return MapNodeType.Shop;
-            if (roll < 0.70) return MapNodeType.Rest;
-            if (roll < 0.84) return MapNodeType.Opportunity;
-            if (roll < 0.94) return MapNodeType.Artifact;
-            return MapNodeType.Mystery;
+            var offset = roll < 0.25 ? -1 : roll > 0.75 ? 1 : 0;
+            var result = projected + offset;
+            if (result < 0 || result >= count)
+            {
+                return projected;
+            }
+
+            return result;
+        }
+
+        private static void AddUnique(List<int> values, int value)
+        {
+            if (!values.Contains(value))
+            {
+                values.Add(value);
+            }
         }
     }
 }

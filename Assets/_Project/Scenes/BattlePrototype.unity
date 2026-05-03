@@ -323,7 +323,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 21356be8d2bcd8e49af9182c7651ae74, type: 3}
   m_Name: 
   m_EditorClassIdentifier: XTD.Runtime::XTD.Battle.BattleController
-  defaultCatalog: {fileID: 0}
+  defaultCatalog: {fileID: 11400000, guid: a4b1a79dfd6afe940b1c21a927ddf765, type: 2}
   encounterId: encounter_training_camp
   tickRate: 30
   laneX: 0

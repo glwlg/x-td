@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace XTD.Content
 {
-    [CreateAssetMenu(menuName = "X-TD/Content/Artifact Definition", fileName = "ArtifactDefinition")]
+    [CreateAssetMenu(menuName = "神魔镇荒/Content/Artifact Definition", fileName = "ArtifactDefinition")]
     public sealed class ArtifactDefinition : ScriptableObject
     {
         public string id;

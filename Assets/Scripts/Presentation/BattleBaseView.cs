@@ -15,23 +15,26 @@ namespace XTD.Presentation
         private float maxHp;
         private float flash;
         private float seed;
+        private bool showWorldPresentation = true;
 
         private void Awake()
         {
             BuildParts();
         }
 
-        public void Initialize(Faction side, Sprite sprite, Vector3 position, float scale, float maximumHp)
+        public void Initialize(Faction side, Sprite sprite, Vector3 position, float scale, float maximumHp, bool visibleWorldPresentation = true)
         {
             faction = side;
             baseScale = scale;
             maxHp = Mathf.Max(1f, maximumHp);
             seed = Random.Range(0f, 50f);
+            showWorldPresentation = visibleWorldPresentation;
             transform.position = position;
             transform.localScale = Vector3.one * baseScale;
             gameObject.name = side == Faction.Player ? "我方大本营" : "敌方大本营";
 
             BuildParts();
+            SetBodyVisible(showWorldPresentation);
             bodyColor = side == Faction.Player ? Color.white : new Color(1f, 0.48f, 0.42f, 1f);
             bodyRenderer.sprite = sprite != null ? sprite : RuntimeSpriteFactory.UnitSprite;
             bodyRenderer.color = bodyColor;
@@ -65,6 +68,11 @@ namespace XTD.Presentation
 
         private void Update()
         {
+            if (!showWorldPresentation)
+            {
+                return;
+            }
+
             var pulse = Mathf.Sin(Time.time * 2.0f + seed) * 0.035f;
             transform.localScale = Vector3.one * (baseScale + pulse);
 
@@ -73,6 +81,14 @@ namespace XTD.Presentation
 
             flash = Mathf.MoveTowards(flash, 0f, Time.deltaTime * 4.5f);
             bodyRenderer.color = Color.Lerp(bodyColor, Color.white, flash);
+        }
+
+        private void SetBodyVisible(bool visible)
+        {
+            auraRenderer.enabled = visible;
+            bodyRenderer.enabled = visible;
+            healthBack.enabled = true;
+            healthFill.enabled = true;
         }
 
         private void BuildParts()

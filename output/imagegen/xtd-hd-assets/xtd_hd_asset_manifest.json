@@ -1,0 +1,882 @@
+[
+  {
+    "rel": "Backgrounds/battlefield_honghuang_ai.png",
+    "kind": "background",
+    "subject": "a full-screen vertical battle arena: enemy demon gate and crimson fog at the top, player jade command platform and immortal banners at the bottom, a clear middle battle line, Honghuang and Journey-to-the-West Chinese mythology mood",
+    "transparent": false,
+    "size": "1920x1088",
+    "quality": "high"
+  },
+  {
+    "rel": "Battle/boss_black_wind_battle.png",
+    "kind": "battle",
+    "subject": "Black Wind mountain demon commander as a stationary enemy core, huge dark armor, violet wind magic, facing downward toward the player army",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "Battle/boss_bone_queen_battle.png",
+    "kind": "battle",
+    "subject": "Bone Queen warlord as a stationary enemy core, white bone crown, spectral ribbons, cold jade necromancy, facing downward",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "Battle/boss_chaos_lord_battle.png",
+    "kind": "battle",
+    "subject": "final Chaos Demon Lord as a towering stationary enemy core, cracked obsidian armor, red primordial fire, facing downward",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "Battle/enemy_alpha_battle.png",
+    "kind": "battle",
+    "subject": "elite demon vanguard captain, bronze mask and jagged spear, facing downward",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "Battle/enemy_bone_elite_battle.png",
+    "kind": "battle",
+    "subject": "white-bone elite commander with bone halberd and ghost armor, facing downward",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "Battle/enemy_brute_battle.png",
+    "kind": "battle",
+    "subject": "hulking yaksha brute monster with stone club, heavy muscles and rough armor, facing downward",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "Battle/enemy_grunt_battle.png",
+    "kind": "battle",
+    "subject": "small mountain demon foot soldier with claw blades and ragged armor, facing downward",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "Battle/enemy_imp_archer_battle.png",
+    "kind": "battle",
+    "subject": "small skeletal imp archer with bone bow and dark talismans, facing downward",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "Battle/enemy_ox_elite_battle.png",
+    "kind": "battle",
+    "subject": "bull demon elite officer with massive axe and red-gold armor, facing downward",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "Battle/enemy_venom_shaman_battle.png",
+    "kind": "battle",
+    "subject": "venom fog shaman monster with poison staff and green talisman smoke, facing downward",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "Battle/enemy_wolf_elite_battle.png",
+    "kind": "battle",
+    "subject": "wolf demon elite striker with twin blades and black fur armor, facing downward",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "Battle/unit_archer_battle.png",
+    "kind": "battle",
+    "subject": "player spirit crossbow archer soldier in cyan jade armor, aiming upward",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "Battle/unit_bagua_wall_battle.png",
+    "kind": "battle",
+    "subject": "Bagua stone barricade structure with jade trigram plates, defensive wall, oriented upward",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "Battle/unit_heaven_general_battle.png",
+    "kind": "battle",
+    "subject": "golden heavenly general elite soldier with long spear and ornate armor, facing upward",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "Battle/unit_incense_barracks_battle.png",
+    "kind": "battle",
+    "subject": "incense barracks production building with bronze roof, prayer smoke, soldier gate facing upward",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "Battle/unit_militia_battle.png",
+    "kind": "battle",
+    "subject": "heavenly incense militia soldier squad leader with simple spear and cloth armor, facing upward",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "Battle/unit_monkey_vanguard_battle.png",
+    "kind": "battle",
+    "subject": "mythic monkey vanguard hero, golden staff, cloud boots, heroic armor, facing upward",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "Battle/unit_spirit_arrow_altar_battle.png",
+    "kind": "battle",
+    "subject": "spirit arrow altar production building with floating jade bow mechanism, facing upward",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "Battle/unit_thunder_drum_tower_battle.png",
+    "kind": "battle",
+    "subject": "thunder drum tower production building, bronze war drum, lightning rods, facing upward",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "Battle/unit_thunder_guard_battle.png",
+    "kind": "battle",
+    "subject": "thunder drum guard melee soldier with drum shield and lightning spear, facing upward",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "Cards/card_archer.png",
+    "kind": "card",
+    "subject": "card illustration for a spirit crossbow archer squad, front-facing toward the player",
+    "transparent": false,
+    "size": "1024x1536",
+    "quality": "high"
+  },
+  {
+    "rel": "Cards/card_binding_talisman.png",
+    "kind": "card",
+    "subject": "card illustration for a demon-binding rope talisman spell, golden immortal rope coiling around shadow demons, front-facing",
+    "transparent": false,
+    "size": "1024x1536",
+    "quality": "high"
+  },
+  {
+    "rel": "Cards/card_break_formation.png",
+    "kind": "card",
+    "subject": "card illustration for a formation-breaking golden command token, shattered enemy battle array and bronze seal, front-facing",
+    "transparent": false,
+    "size": "1024x1536",
+    "quality": "high"
+  },
+  {
+    "rel": "Cards/card_cloud_banner.png",
+    "kind": "card",
+    "subject": "card illustration for a flowing cloud military order banner, pale silk command flag, wind and mana streams, front-facing",
+    "transparent": false,
+    "size": "1024x1536",
+    "quality": "high"
+  },
+  {
+    "rel": "Cards/card_curse_demon_fog.png",
+    "kind": "card",
+    "subject": "curse card illustration for demon fog invading the heart, sickly fog around a cracked jade heart, front-facing",
+    "transparent": false,
+    "size": "1024x1536",
+    "quality": "high"
+  },
+  {
+    "rel": "Cards/card_curse_heavy_karma.png",
+    "kind": "card",
+    "subject": "curse card illustration for a heavy karma debt contract, black-gold contract scroll and ominous seal, front-facing",
+    "transparent": false,
+    "size": "1024x1536",
+    "quality": "high"
+  },
+  {
+    "rel": "Cards/card_curse_karmic_fire.png",
+    "kind": "card",
+    "subject": "curse card illustration for karmic fire binding the hero, dark red flames and black talisman chains, front-facing",
+    "transparent": false,
+    "size": "1024x1536",
+    "quality": "high"
+  },
+  {
+    "rel": "Cards/card_enemy_alpha.png",
+    "kind": "card",
+    "subject": "card illustration for an elite demon vanguard captain encounter, front-facing toward the player",
+    "transparent": false,
+    "size": "1024x1536",
+    "quality": "high"
+  },
+  {
+    "rel": "Cards/card_enemy_brute.png",
+    "kind": "card",
+    "subject": "card illustration for a hulking yaksha brute monster, front-facing toward the player",
+    "transparent": false,
+    "size": "1024x1536",
+    "quality": "high"
+  },
+  {
+    "rel": "Cards/card_enemy_grunt.png",
+    "kind": "card",
+    "subject": "card illustration for a mountain demon foot soldier, front-facing toward the player",
+    "transparent": false,
+    "size": "1024x1536",
+    "quality": "high"
+  },
+  {
+    "rel": "Cards/card_fireball.png",
+    "kind": "card",
+    "subject": "card illustration for Samadhi true fire spell, a blazing mythic fireball and golden talisman, front-facing",
+    "transparent": false,
+    "size": "1024x1536",
+    "quality": "high"
+  },
+  {
+    "rel": "Cards/card_golden_barrier.png",
+    "kind": "card",
+    "subject": "card illustration for a golden protective battle barrier over allied soldiers, front-facing",
+    "transparent": false,
+    "size": "1024x1536",
+    "quality": "high"
+  },
+  {
+    "rel": "Cards/card_healing_rain.png",
+    "kind": "card",
+    "subject": "card illustration for a healing rain blessing, jade lotus clouds raining luminous drops over allied soldiers, front-facing",
+    "transparent": false,
+    "size": "1024x1536",
+    "quality": "high"
+  },
+  {
+    "rel": "Cards/card_heaven_general_order.png",
+    "kind": "card",
+    "subject": "card illustration for a heavenly general command token summoning golden armored elites, front-facing",
+    "transparent": false,
+    "size": "1024x1536",
+    "quality": "high"
+  },
+  {
+    "rel": "Cards/card_heaven_soldier_talisman.png",
+    "kind": "card",
+    "subject": "card illustration for a heaven soldier talisman summoning many weak soldiers, front-facing",
+    "transparent": false,
+    "size": "1024x1536",
+    "quality": "high"
+  },
+  {
+    "rel": "Cards/card_heavenly_workshop.png",
+    "kind": "card",
+    "subject": "card illustration for a heavenly workshop camp that produces soldiers, divine machinery and jade scaffolds, front-facing",
+    "transparent": false,
+    "size": "1024x1536",
+    "quality": "high"
+  },
+  {
+    "rel": "Cards/card_incense_barracks.png",
+    "kind": "card",
+    "subject": "card illustration for an incense barracks production building, front-facing toward the player",
+    "transparent": false,
+    "size": "1024x1536",
+    "quality": "high"
+  },
+  {
+    "rel": "Cards/card_militia.png",
+    "kind": "card",
+    "subject": "card illustration for incense militia soldiers, front-facing toward the player",
+    "transparent": false,
+    "size": "1024x1536",
+    "quality": "high"
+  },
+  {
+    "rel": "Cards/card_monkey_hero.png",
+    "kind": "card",
+    "subject": "card illustration for a mythic monkey vanguard hero with golden staff, front-facing",
+    "transparent": false,
+    "size": "1024x1536",
+    "quality": "high"
+  },
+  {
+    "rel": "Cards/card_mountain_seal.png",
+    "kind": "card",
+    "subject": "card illustration for a mountain-pushing seal spell, massive jade mountain seal slamming down with dust and runes, front-facing",
+    "transparent": false,
+    "size": "1024x1536",
+    "quality": "high"
+  },
+  {
+    "rel": "Cards/card_nezha_order.png",
+    "kind": "card",
+    "subject": "card illustration for a lotus-wheeled young divine general command, red ribbons and thunder guards, front-facing",
+    "transparent": false,
+    "size": "1024x1536",
+    "quality": "high"
+  },
+  {
+    "rel": "Cards/card_pangu_spark.png",
+    "kind": "card",
+    "subject": "card illustration for a primordial Pangu spark fire spell, ancient cosmic ember, cracked void, front-facing",
+    "transparent": false,
+    "size": "1024x1536",
+    "quality": "high"
+  },
+  {
+    "rel": "Cards/card_poison_gourd.png",
+    "kind": "card",
+    "subject": "card illustration for a miasma poison gourd, dark jade gourd leaking green toxic mist and talismans, front-facing",
+    "transparent": false,
+    "size": "1024x1536",
+    "quality": "high"
+  },
+  {
+    "rel": "Cards/card_rally.png",
+    "kind": "card",
+    "subject": "card illustration for a war drum tactic order, morale wave and command banners, front-facing",
+    "transparent": false,
+    "size": "1024x1536",
+    "quality": "high"
+  },
+  {
+    "rel": "Cards/card_reward_back.png",
+    "kind": "card",
+    "subject": "ornate reward card back with jade, bronze, cloud patterns, no text",
+    "transparent": false,
+    "size": "1024x1536",
+    "quality": "high"
+  },
+  {
+    "rel": "Cards/card_roadblock.png",
+    "kind": "card",
+    "subject": "card illustration for Bagua stone barricade, defensive talisman wall, front-facing",
+    "transparent": false,
+    "size": "1024x1536",
+    "quality": "high"
+  },
+  {
+    "rel": "Cards/card_spirit_arrow_altar.png",
+    "kind": "card",
+    "subject": "card illustration for a spirit arrow altar building with floating jade bow, front-facing",
+    "transparent": false,
+    "size": "1024x1536",
+    "quality": "high"
+  },
+  {
+    "rel": "Cards/card_star_river_decree.png",
+    "kind": "card",
+    "subject": "card illustration for a star river imperial decree tactic, celestial scroll, starlight ink, front-facing",
+    "transparent": false,
+    "size": "1024x1536",
+    "quality": "high"
+  },
+  {
+    "rel": "Cards/card_thunder_drum_tower.png",
+    "kind": "card",
+    "subject": "card illustration for thunder drum tower building, lightning and bronze drum, front-facing",
+    "transparent": false,
+    "size": "1024x1536",
+    "quality": "high"
+  },
+  {
+    "rel": "Cards/card_thunder_talisman.png",
+    "kind": "card",
+    "subject": "card illustration for palm thunder talisman spell, crackling blue-white lightning, front-facing",
+    "transparent": false,
+    "size": "1024x1536",
+    "quality": "high"
+  },
+  {
+    "rel": "Cards/card_treasure_talisman.png",
+    "kind": "card",
+    "subject": "card illustration for a treasure-gathering talisman, gold coins and jade ingots pulled into a glowing paper charm, front-facing",
+    "transparent": false,
+    "size": "1024x1536",
+    "quality": "high"
+  },
+  {
+    "rel": "FX/fx_boss_blast.png",
+    "kind": "fx",
+    "subject": "single boss blast impact effect, crimson-black shockwave with mythic sparks",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "FX/fx_boss_warning.png",
+    "kind": "fx",
+    "subject": "single boss skill warning circle effect, red talisman ring and danger glyphs",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "FX/fx_death_smoke.png",
+    "kind": "fx",
+    "subject": "single death smoke poof effect, gray spirit smoke with fading embers",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "FX/fx_divine_commander_order.png",
+    "kind": "fx",
+    "subject": "single divine commander order effect, golden command seal, war banners and circular shockwave",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "FX/fx_divine_summon_gate.png",
+    "kind": "fx",
+    "subject": "single divine summoning gate effect, jade portal, cloud spirits and golden incense light",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "FX/fx_divine_thunder_fire.png",
+    "kind": "fx",
+    "subject": "single divine thunder-fire effect, blue lightning fused with red Samadhi flames in a circular blast",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "FX/fx_hit_jade_spark.png",
+    "kind": "fx",
+    "subject": "single jade spark hit effect, green-gold shards and impact flash",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "FX/fx_morale_burst.png",
+    "kind": "fx",
+    "subject": "single morale burst effect, golden war drum wave and rally sparks",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "FX/fx_samadhi_fire_impact.png",
+    "kind": "fx",
+    "subject": "single Samadhi fire impact effect, bright orange mythical flame explosion",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "FX/fx_thunder_impact.png",
+    "kind": "fx",
+    "subject": "single thunder impact effect, blue-white lightning strike and electric splash",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "FX/projectile_spirit_arrow.png",
+    "kind": "fx",
+    "subject": "single spirit arrow projectile, glowing cyan jade arrow pointing upward",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/Artifacts/artifact_artifact_eye.png",
+    "kind": "artifact",
+    "subject": "artifact icon of an observatory star-gazing eye mirror, polished jade and bronze",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/Artifacts/artifact_battle_scripture.png",
+    "kind": "artifact",
+    "subject": "artifact icon of a battle scripture scroll with gold seals",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/Artifacts/artifact_black_tortoise.png",
+    "kind": "artifact",
+    "subject": "artifact icon of black tortoise armor plate, dark jade shell and bronze trim",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/Artifacts/artifact_cloud_boots.png",
+    "kind": "artifact",
+    "subject": "artifact icon of cloud-walking boots with white cloud soles",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/Artifacts/artifact_command_seal.png",
+    "kind": "artifact",
+    "subject": "artifact icon of a military command seal, carved jade and red cord",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/Artifacts/artifact_curse_gourd.png",
+    "kind": "artifact",
+    "subject": "artifact icon of a curse-sealing gourd, dark jade bottle with gold talisman chains",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/Artifacts/artifact_dragon_bone.png",
+    "kind": "artifact",
+    "subject": "artifact icon of a dragon bone relic with gold bindings",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/Artifacts/artifact_empty_slot.png",
+    "kind": "artifact",
+    "subject": "empty artifact slot icon, dark jade socket and subtle bronze rim",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/Artifacts/artifact_field_purse.png",
+    "kind": "artifact",
+    "subject": "artifact icon of a battlefield coin purse with old copper coins",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/Artifacts/artifact_fire_pearl.png",
+    "kind": "artifact",
+    "subject": "artifact icon of a fire pearl, glowing red-gold orb",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/Artifacts/artifact_fox_coin.png",
+    "kind": "artifact",
+    "subject": "artifact icon of a fox immortal coin, gold coin with fox motif",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/Artifacts/artifact_general_platform.png",
+    "kind": "artifact",
+    "subject": "artifact icon of a general appointment platform, small jade command dais with banners",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/Artifacts/artifact_heaven_seal.png",
+    "kind": "artifact",
+    "subject": "artifact icon of a heavenly talisman seal, jade stamp and cloud aura",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/Artifacts/artifact_jade_bottle.png",
+    "kind": "artifact",
+    "subject": "artifact icon of a jade purification bottle, porcelain jade glow",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/Artifacts/artifact_long_banner.png",
+    "kind": "artifact",
+    "subject": "artifact icon of a long command banner, red silk and gold pole",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/Artifacts/artifact_market_token.png",
+    "kind": "artifact",
+    "subject": "artifact icon of a market trade token, bronze coin charm",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/Artifacts/artifact_permanent_relic.png",
+    "kind": "artifact",
+    "subject": "artifact icon of a permanent relic, radiant treasure shard",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/Artifacts/artifact_star_sand.png",
+    "kind": "artifact",
+    "subject": "artifact icon of star sand in a small crystal vial",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/Artifacts/artifact_taiji_map.png",
+    "kind": "artifact",
+    "subject": "artifact icon of a Taiji map fragment, yin-yang silk chart",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/Artifacts/artifact_ten_thousand_banner.png",
+    "kind": "artifact",
+    "subject": "artifact icon of ten-thousand-soldier banner, grand crimson war flag with golden cloud metalwork",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/Artifacts/artifact_thunder_fire_box.png",
+    "kind": "artifact",
+    "subject": "artifact icon of thunder-fire talisman box, lacquered case with lightning and fire charms",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/Artifacts/artifact_treasure_chest.png",
+    "kind": "artifact",
+    "subject": "artifact icon of a mythic treasure chest, jade inlay and gold lock",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/Artifacts/artifact_vajra.png",
+    "kind": "artifact",
+    "subject": "artifact icon of a vajra staff, gold thunder weapon",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/Artifacts/artifact_war_drum.png",
+    "kind": "artifact",
+    "subject": "artifact icon of a war drum, bronze frame and red leather drumhead",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/Classes/hero_class_border_commander.png",
+    "kind": "class",
+    "subject": "class selection portrait for Border Commander, armored frontier strategist holding a command seal and war banner, confident, front-facing",
+    "transparent": false,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/Classes/hero_class_spirit_summoner.png",
+    "kind": "class",
+    "subject": "class selection portrait for Spirit Summoner, elegant immortal summoner opening jade portals and spirit soldiers, front-facing",
+    "transparent": false,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/Classes/hero_class_thunder_mage.png",
+    "kind": "class",
+    "subject": "class selection portrait for Thunder Fire Fangshi mage, Daoist robe, talisman box, lightning and true fire orbiting hands, front-facing",
+    "transparent": false,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/Nodes/icon_card_reward.png",
+    "kind": "node",
+    "subject": "UI reward icon for receiving a card, glowing jade card bundle",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/Nodes/icon_gold_reward.png",
+    "kind": "node",
+    "subject": "UI reward icon for receiving gold, pile of ancient coins",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/Nodes/icon_heal_rest.png",
+    "kind": "node",
+    "subject": "UI reward icon for healing at rest, warm jade lotus medicine light",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/Nodes/icon_morale_war_drum.png",
+    "kind": "node",
+    "subject": "UI reward icon for morale war drum, small drum with golden wave",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/Nodes/icon_permanent_relic.png",
+    "kind": "node",
+    "subject": "UI reward icon for permanent relic, radiant relic shard",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/Nodes/icon_route_path.png",
+    "kind": "node",
+    "subject": "UI route icon for map path, glowing celestial road line",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/Nodes/icon_upgrade_fusion.png",
+    "kind": "node",
+    "subject": "UI reward icon for three-card fusion upgrade, three cards merging into one",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/Nodes/node_artifact.png",
+    "kind": "node",
+    "subject": "map node icon for artifact room, glowing relic pedestal",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/Nodes/node_elite_monster.png",
+    "kind": "node",
+    "subject": "map node icon for elite monster room, horned demon mask",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/Nodes/node_final_boss.png",
+    "kind": "node",
+    "subject": "map node icon for final boss room, huge chaos demon gate",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/Nodes/node_mystery.png",
+    "kind": "node",
+    "subject": "map node icon for mystery room, dark question talisman and mist",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/Nodes/node_normal_monster.png",
+    "kind": "node",
+    "subject": "map node icon for normal monster room, small demon claw mark",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/Nodes/node_opportunity.png",
+    "kind": "node",
+    "subject": "map node icon for opportunity room, lucky celestial lotus and coins",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/Nodes/node_rest.png",
+    "kind": "node",
+    "subject": "map node icon for rest room, calm incense brazier and healing light",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/Nodes/node_shop.png",
+    "kind": "node",
+    "subject": "map node icon for shop room, traveling immortal merchant stall",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/Nodes/node_small_boss.png",
+    "kind": "node",
+    "subject": "map node icon for small boss room, ominous boss crest",
+    "transparent": true,
+    "size": "1024x1024",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/card_frame_honghuang.png",
+    "kind": "ui",
+    "subject": "ornate vertical Chinese mythology card frame, polished bronze and jade, empty transparent center, no text",
+    "transparent": true,
+    "size": "1024x1536",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/card_frame_honghuang_raw.png",
+    "kind": "ui",
+    "subject": "ornate vertical Chinese mythology card frame, bronze and jade relief, empty transparent center, no text",
+    "transparent": true,
+    "size": "1024x1536",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/map_misty_valley_bg.png",
+    "kind": "background",
+    "subject": "full-screen roguelike map background, misty Honghuang mountain valley, celestial path rising upward, distant demon gate, rich 3D environment",
+    "transparent": false,
+    "size": "1920x1088",
+    "quality": "high"
+  },
+  {
+    "rel": "UI/upgrade_sanctum_bg.png",
+    "kind": "background",
+    "subject": "full-screen shop and rest room background, immortal upgrade sanctum with jade forge, incense, merchant shelves and healing lotus pool, rich 3D environment",
+    "transparent": false,
+    "size": "1920x1088",
+    "quality": "high"
+  }
+]

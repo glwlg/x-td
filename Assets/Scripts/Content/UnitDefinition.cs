@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace XTD.Content
 {
-    [CreateAssetMenu(menuName = "X-TD/Content/Unit Definition", fileName = "UnitDefinition")]
+    [CreateAssetMenu(menuName = "神魔镇荒/Content/Unit Definition", fileName = "UnitDefinition")]
     public sealed class UnitDefinition : ScriptableObject
     {
         public string id;

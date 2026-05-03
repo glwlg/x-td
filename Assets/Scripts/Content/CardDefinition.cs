@@ -13,7 +13,7 @@ namespace XTD.Content
         public float yJitter = 0.25f;
     }
 
-    [CreateAssetMenu(menuName = "X-TD/Content/Card Definition", fileName = "CardDefinition")]
+    [CreateAssetMenu(menuName = "神魔镇荒/Content/Card Definition", fileName = "CardDefinition")]
     public sealed class CardDefinition : ScriptableObject
     {
         public string id;
@@ -28,8 +28,31 @@ namespace XTD.Content
         public List<CardUnitSpawn> unitSpawns = new();
         public List<BattleEffectDefinition> effects = new();
 
-        public bool CanReceiveMorale =>
-            type == CardType.Soldier || type == CardType.EliteSoldier || type == CardType.Hero;
+        public bool CanReceiveMorale
+        {
+            get
+            {
+                if (type == CardType.Soldier || type == CardType.EliteSoldier || type == CardType.Hero)
+                {
+                    return true;
+                }
+
+                if (type != CardType.Tactic)
+                {
+                    return false;
+                }
+
+                foreach (var effect in effects)
+                {
+                    if (effect != null && effect.effectType == EffectType.GainMorale)
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+        }
 
         public int CommandCost()
         {

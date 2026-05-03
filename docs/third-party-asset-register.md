@@ -11,8 +11,15 @@
 | Hit sound bitcrush | `Assets/Resources/Audio/SFX/hit01.wav` | OpenGameArt: https://opengameart.org/content/hit-sound-bitcrush | DaGameKnower | CC0 | 重击/法术打击候选音效 | 随机播放，用于命中反馈。 |
 | Metal Impact Sounds | `Assets/Resources/Audio/SFX/clink1.wav`、`Assets/Resources/Audio/SFX/thud2.wav` | OpenGameArt: https://opengameart.org/content/metal-impact-sounds | BMacZero | CC0 | 金属碰撞/钝击音效 | 来源页说明可选鸣谢 Brian MacIntosh。 |
 
+## 当前字体素材
+
+| 资源 | 文件路径 | 来源 | 作者 | 授权 | 用途 | 备注 |
+| --- | --- | --- | --- | --- | --- | --- |
+| Noto Sans CJK SC Regular | `Assets/Resources/Fonts/NotoSansCJKsc-Regular.otf` | https://github.com/notofonts/noto-cjk | Google / Adobe 与 Noto CJK 贡献者 | SIL Open Font License 1.1 | UI 中文字体，主要用于 WebGL 打包后显示中文 | 字体随包进入 `Resources`，避免 WebGL 依赖系统字体导致中文丢失。 |
+
 ## 使用规则
 
 - 优先使用 CC0 或明确可商用的素材。
 - 如果素材要求署名，必须在本文件和游戏鸣谢中保留作者与来源。
 - 如果后续替换、剪辑、混音或压缩音频，需要在备注中说明处理方式。
+

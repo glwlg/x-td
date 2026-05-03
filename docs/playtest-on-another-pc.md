@@ -1,4 +1,4 @@
-# X-TD 另一台电脑试玩说明
+# 神魔镇荒 另一台电脑试玩说明
 
 更新时间：2026-05-02
 
@@ -8,7 +8,7 @@
 
 在当前开发电脑上操作：
 
-1. 打开 Unity 项目：`W:\glwlg\game\X-TD`。
+1. 打开 Unity 项目：`<项目目录>`。
 2. 等 Unity 编译完成。
 3. 确认 Build Settings / Build Profiles 里包含这些场景：
    - `Assets/_Project/Scenes/Boot.unity`
@@ -16,14 +16,14 @@
    - `Assets/_Project/Scenes/BattlePrototype.unity`
 4. 目标平台选择 Windows。
 5. 架构选择 x86_64。
-6. 点击 Build，输出到类似目录：`Builds/Windows/X-TD`。
+6. 点击 Build，输出到类似目录：`Builds/Windows/神魔镇荒`。
 7. 把整个输出目录复制到另一台电脑，不要只复制 `.exe`。
-8. 在另一台电脑运行 `X-TD.exe`。
+8. 在另一台电脑运行 `神魔镇荒.exe`。
 
 复制时至少要包含：
 
-- `X-TD.exe`
-- `X-TD_Data/`
+- `神魔镇荒.exe`
+- `神魔镇荒_Data/`
 - Unity 生成的运行时依赖目录和文件，例如 `MonoBleedingEdge/`、`UnityPlayer.dll` 等。
 
 当前 BGM 注意：
@@ -45,7 +45,7 @@
 如果用 Git：
 
 ```powershell
-git clone <你的仓库地址> X-TD
+git clone <你的仓库地址> 神魔镇荒
 ```
 
 如果直接复制目录，不建议复制这些 Unity 临时目录：
@@ -61,7 +61,7 @@ git clone <你的仓库地址> X-TD
 
 1. 用 Unity Hub 打开项目根目录。
 2. 等 Unity 自动重新导入资源和编译脚本。
-3. 如画面或数据不对，执行：`X-TD > 初始化 > 重建 MVP 原型内容`。
+3. 如画面或数据不对，执行：`神魔镇荒 > 初始化 > 重建 MVP 原型内容`。
 4. 打开 `Assets/_Project/Scenes/Boot.unity`。
 5. 点击 Play。
 
@@ -70,3 +70,4 @@ git clone <你的仓库地址> X-TD
 如果只是想给自己另一台电脑玩，优先用“打 Windows 包后复制过去”。
 
 如果另一台电脑也要参与开发，才用“打开 Unity 项目”的方式。
+

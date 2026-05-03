@@ -6,6 +6,13 @@ namespace XTD.Content
         Enemy
     }
 
+    public enum HeroClassType
+    {
+        BorderCommander,
+        SpiritSummoner,
+        ThunderMage
+    }
+
     public enum UnitRole
     {
         Soldier,
@@ -25,7 +32,8 @@ namespace XTD.Content
         Tactic,
         Debuff,
         Structure,
-        Economy
+        Economy,
+        Curse
     }
 
     public enum CardReleaseRule
@@ -107,5 +115,14 @@ namespace XTD.Content
         Artifact,
         SmallBoss,
         FinalBoss
+    }
+
+    public enum FloorAffixType
+    {
+        None,
+        DemonFog,
+        ThunderTribulation,
+        DemonTide,
+        ImmortalArray
     }
 }

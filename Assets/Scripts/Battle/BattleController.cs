@@ -13,6 +13,16 @@ namespace XTD.Battle
     {
         private const string BattleMusicResourcePath = "Audio/BGM/hyoshi_action_track_2";
         private const string BattleMusicAssetPath = "Assets/Resources/Audio/BGM/hyoshi_action_track_2.ogg";
+        private const string ProjectileResourcePath = "Art/AI/FX/projectile_spirit_arrow";
+        private const string HitEffectResourcePath = "Art/AI/FX/fx_hit_jade_spark";
+        private const string SpellImpactResourcePath = "Art/AI/FX/fx_samadhi_fire_impact";
+        private const string CommanderDivineEffectResourcePath = "Art/AI/FX/fx_divine_commander_order";
+        private const string SummonerDivineEffectResourcePath = "Art/AI/FX/fx_divine_summon_gate";
+        private const string ThunderDivineEffectResourcePath = "Art/AI/FX/fx_divine_thunder_fire";
+        private const float DivinePowerManaCost = 7f;
+        private const float StructurePlacementRadius = 0.62f;
+        private const float StructurePlacementMinDistance = 1.18f;
+        private const float StructurePlacementSpacing = 1.32f;
         private static readonly string[] HitSfxResourcePaths =
         {
             "Audio/SFX/attack_hit",
@@ -42,6 +52,9 @@ namespace XTD.Battle
         [SerializeField] private Sprite enemyProjectileSprite;
         [SerializeField] private Sprite hitEffectSprite;
         [SerializeField] private Sprite spellImpactSprite;
+        [SerializeField] private Sprite commanderDivineEffectSprite;
+        [SerializeField] private Sprite summonerDivineEffectSprite;
+        [SerializeField] private Sprite thunderDivineEffectSprite;
 
         [Header("Audio")]
         [SerializeField] private AudioClip battleMusicClip;
@@ -50,6 +63,7 @@ namespace XTD.Battle
         [SerializeField, Range(0f, 1f)] private float hitSfxVolume = 0.12f;
 
         private readonly List<BattleUnit> activeUnits = new();
+        private readonly HashSet<string> defeatedHeroUnitIds = new();
         private readonly MoraleTracker morale = new();
         private ComponentPool<BattleUnit> unitPool;
         private ComponentPool<ProjectileView> projectilePool;
@@ -69,6 +83,10 @@ namespace XTD.Battle
         private Vector3 pendingCoreBlastPosition;
         private float pendingCoreBlastRadius;
         private float pendingCoreBlastDamage;
+        private bool corePhaseTwoTriggered;
+        private bool corePhaseThreeTriggered;
+        private float manaSuppressionTimer;
+        private float floorAffixTimer;
         private float mana;
         private int baseMaxMana;
         private int baseMaxCommand;
@@ -82,6 +100,7 @@ namespace XTD.Battle
         private AudioClip victoryClip;
         private AudioClip defeatClip;
         private float hitSfxCooldown;
+        private int defeatedEnemyCount;
 
         public BattleOutcome Outcome { get; private set; } = BattleOutcome.Running;
         public float PlayerBaseHp { get; private set; }
@@ -100,7 +119,30 @@ namespace XTD.Battle
         public bool HasEnemyBase => encounter == null || encounter.coreEnemy == null;
         public string EnemyObjectiveLabel => HasEnemyBase ? "敌方基地" : "敌方核心";
         public float EnemyObjectiveHp => HasEnemyBase ? EnemyBaseHp : Mathf.Max(0f, EnemyCoreHp);
+        public float EnemyObjectiveMaxHp => HasEnemyBase
+            ? Mathf.Max(1f, encounter != null ? encounter.enemyBaseMaxHp : 120f)
+            : Mathf.Max(1f, encounter?.coreEnemy != null ? encounter.coreEnemy.maxHp * MaxHpMultiplierFor(encounter.coreEnemy, Faction.Enemy) : 1f);
         public float EnemyCoreHp => EnemyCoreUnit()?.CurrentHp ?? 0f;
+        public string EncounterDisplayName => encounter != null ? encounter.displayName : EnemyObjectiveLabel;
+        public bool IsBossLikeEncounter => encounter != null && (encounter.coreEnemy != null || encounter.nodeType is MapNodeType.EliteMonster or MapNodeType.SmallBoss or MapNodeType.FinalBoss);
+        public string BattleStageLabel => flow != null && flow.HasActiveRun
+            ? $"迷宫 {flow.CurrentRun.floor}/3 · {GameFlowController.NodeTypeName(encounter != null ? encounter.nodeType : MapNodeType.NormalMonster)}"
+            : "战斗原型";
+        public string HeroClassLabel => flow != null && flow.HasActiveRun
+            ? GameFlowController.HeroClassName(flow.CurrentHeroClass)
+            : "战斗原型";
+        public string HeroClassStyle => flow != null && flow.HasActiveRun
+            ? GameFlowController.HeroClassShortStyle(flow.CurrentHeroClass)
+            : "基础对抗";
+        public int CurrentRow => flow != null && flow.HasActiveRun ? flow.CurrentRun.row : 1;
+        public int EnemyUnitCount => activeUnits.Count(unit => unit != null && unit.IsAlive && unit.Faction == Faction.Enemy);
+        public int PlayerUnitCount => activeUnits.Count(unit => unit != null && unit.IsAlive && unit.Faction == Faction.Player);
+        public int DefeatedEnemyCount => defeatedEnemyCount;
+        public float PlayerBaseMaxHp => CurrentPlayerBattleMaxHp();
+        public float DivinePowerCost => DivinePowerManaCost;
+        public bool CanReleaseDivinePower => Outcome == BattleOutcome.Running && mana >= DivinePowerManaCost;
+        public float DivinePowerCharge => Mathf.Clamp01(mana / DivinePowerManaCost);
+        public IReadOnlyList<string> EnemySkillHints => BuildEnemySkillHints();
 
         private void Awake()
         {
@@ -118,6 +160,7 @@ namespace XTD.Battle
             baseMaxMana = maxMana;
             baseMaxCommand = maxCommand;
             baseManaRegenPerSecond = manaRegenPerSecond;
+            EnsurePresentationSprites();
 
             unitPool = new ComponentPool<BattleUnit>(CreateUnitInstance);
             projectilePool = new ComponentPool<ProjectileView>(CreateProjectileInstance);
@@ -169,6 +212,7 @@ namespace XTD.Battle
             }
 
             activeUnits.Clear();
+            defeatedHeroUnitIds.Clear();
             morale.Reset();
             ApplyRunBattleModifiers();
             mana = Mathf.Min(maxMana, 4f + (flow != null && flow.HasActiveRun ? flow.ExtraStartingMana() : 0f));
@@ -176,7 +220,12 @@ namespace XTD.Battle
             coreAreaSkillTimer = 3.2f;
             coreBuffSkillTimer = 5.5f;
             coreWarningTimer = 0f;
+            corePhaseTwoTriggered = false;
+            corePhaseThreeTriggered = false;
+            manaSuppressionTimer = 0f;
+            floorAffixTimer = 3.0f;
             hitSfxCooldown = 0f;
+            defeatedEnemyCount = 0;
             StartBattleMusic();
             var playerMaxHp = CurrentPlayerBattleMaxHp();
             PlayerBaseHp = flow != null && flow.HasActiveRun
@@ -233,7 +282,7 @@ namespace XTD.Battle
                 return false;
             }
 
-            mana -= card.cost;
+            mana -= EffectiveCardCost(card);
             deck.Play(card);
             ResolveCard(card, strengthened, targetPosition);
             PlayOneShot(ref playCardClip, 540f, 0.06f);
@@ -255,7 +304,17 @@ namespace XTD.Battle
                 return false;
             }
 
-            if (mana < card.cost)
+            if (mana < EffectiveCardCost(card))
+            {
+                return false;
+            }
+
+            if (IsHeroAlreadyPresent(card))
+            {
+                return false;
+            }
+
+            if (IsHeroDefeatedThisBattle(card))
             {
                 return false;
             }
@@ -264,12 +323,35 @@ namespace XTD.Battle
             return CurrentCommand + CalculateCommandCost(card, wouldUseMorale) <= maxCommand;
         }
 
+        public int EffectiveCardCost(CardDefinition card)
+        {
+            if (card == null)
+            {
+                return 0;
+            }
+
+            var modifier = flow != null && flow.HasActiveRun ? flow.CardCostModifier(card) : 0;
+            return Mathf.Max(0, card.cost + modifier);
+        }
+
         public bool CanReleaseCardAt(CardDefinition card, Vector3 targetPosition, out string reason)
         {
             reason = string.Empty;
+            if (IsHeroAlreadyPresent(card))
+            {
+                reason = "该英雄已经在场";
+                return false;
+            }
+
+            if (IsHeroDefeatedThisBattle(card))
+            {
+                reason = "该英雄本场已阵亡";
+                return false;
+            }
+
             if (!CanPlayCard(card))
             {
-                reason = "费用或阵位不足";
+                reason = "费用或建筑位不足";
                 return false;
             }
 
@@ -279,6 +361,20 @@ namespace XTD.Battle
                 return false;
             }
 
+            if (CardPlacesStructure(card))
+            {
+                if (targetPosition.y < playerBaseY + 0.10f)
+                {
+                    reason = "建筑不能放在手牌区或基地后方";
+                    return false;
+                }
+
+                if (!CanPlaceStructures(card, targetPosition, out reason))
+                {
+                    return false;
+                }
+            }
+
             if (card.releaseRule != CardReleaseRule.None && (targetPosition.x < placementMinX || targetPosition.x > placementMaxX))
             {
                 reason = "超出战场范围";
@@ -286,6 +382,131 @@ namespace XTD.Battle
             }
 
             return true;
+        }
+
+        public bool CardPlacesStructure(CardDefinition card)
+        {
+            if (card == null)
+            {
+                return false;
+            }
+
+            return card.unitSpawns.Any(spawn => spawn?.unit != null && spawn.unit.role == UnitRole.Structure && spawn.count > 0);
+        }
+
+        public float PreviewRadiusForCard(CardDefinition card)
+        {
+            if (card == null)
+            {
+                return 0f;
+            }
+
+            if (CardPlacesStructure(card))
+            {
+                return StructurePlacementRadius;
+            }
+
+            if (card.releaseRule != CardReleaseRule.Anywhere)
+            {
+                return 0f;
+            }
+
+            var radius = 0f;
+            foreach (var effect in card.effects)
+            {
+                if (effect == null)
+                {
+                    continue;
+                }
+
+                if (effect.effectType is EffectType.Damage or EffectType.AreaDamage or EffectType.Slow or EffectType.Stun or EffectType.Burn or EffectType.Poison or EffectType.Knockback)
+                {
+                    radius = Mathf.Max(radius, effect.radius);
+                }
+            }
+
+            return radius > 0f ? radius : 0.95f;
+        }
+
+        public string CardBlockReason(CardDefinition card)
+        {
+            if (card == null)
+            {
+                return string.Empty;
+            }
+
+            if (IsHeroAlreadyPresent(card))
+            {
+                return "该英雄已经在场";
+            }
+
+            if (IsHeroDefeatedThisBattle(card))
+            {
+                return "该英雄本场已阵亡";
+            }
+
+            if (mana < EffectiveCardCost(card))
+            {
+                return "费用不足";
+            }
+
+            var wouldUseMorale = card.CanReceiveMorale && morale.Charges > 0;
+            if (CurrentCommand + CalculateCommandCost(card, wouldUseMorale) > maxCommand)
+            {
+                return "建筑位不足";
+            }
+
+            return string.Empty;
+        }
+
+        private bool IsHeroAlreadyPresent(CardDefinition card)
+        {
+            if (card == null || card.type != CardType.Hero)
+            {
+                return false;
+            }
+
+            foreach (var spawn in card.unitSpawns)
+            {
+                if (spawn?.unit == null || spawn.unit.role != UnitRole.Hero)
+                {
+                    continue;
+                }
+
+                if (activeUnits.Any(unit =>
+                    unit != null &&
+                    unit.IsAlive &&
+                    unit.Faction == Faction.Player &&
+                    unit.Definition == spawn.unit))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool IsHeroDefeatedThisBattle(CardDefinition card)
+        {
+            if (card == null || card.type != CardType.Hero)
+            {
+                return false;
+            }
+
+            foreach (var spawn in card.unitSpawns)
+            {
+                if (spawn?.unit == null || spawn.unit.role != UnitRole.Hero)
+                {
+                    continue;
+                }
+
+                if (!string.IsNullOrWhiteSpace(spawn.unit.id) && defeatedHeroUnitIds.Contains(spawn.unit.id))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public BattleUnit FindTargetFor(BattleUnit seeker)
@@ -304,7 +525,7 @@ namespace XTD.Battle
             }
 
             var targetBaseY = unit.Faction == Faction.Player ? enemyBaseY : playerBaseY;
-            return Mathf.Abs(targetBaseY - unit.transform.position.y) <= Mathf.Max(0.25f, unit.Definition.range);
+            return Mathf.Abs(targetBaseY - unit.transform.position.y) <= Mathf.Max(0.25f, unit.Definition.range * RangeMultiplierFor(unit.Definition, unit.Faction));
         }
 
         public bool CanUnitAttackBase(BattleUnit unit)
@@ -358,6 +579,20 @@ namespace XTD.Battle
             unitPool.Release(unit);
         }
 
+        public void NotifyUnitDied(BattleUnit unit)
+        {
+            if (unit != null && unit.Faction == Faction.Enemy)
+            {
+                defeatedEnemyCount++;
+            }
+
+            if (unit != null && unit.Faction == Faction.Player && unit.Definition != null && unit.Definition.role == UnitRole.Hero)
+            {
+                defeatedHeroUnitIds.Add(unit.Definition.id);
+                ui?.ShowNotice($"{unit.Definition.displayName} 已阵亡，本场不能再次召唤", 1.8f);
+            }
+        }
+
         public void SpawnProjectile(Vector3 start, Vector3 end, Faction faction)
         {
             var projectile = projectilePool.Get();
@@ -388,6 +623,12 @@ namespace XTD.Battle
             effect.Initialize(position, Faction.Player, spellImpactSprite != null ? spellImpactSprite : hitEffectSprite, 0.55f, () => effectPool.Release(effect));
         }
 
+        private void SpawnDivineEffect(Vector3 position, Sprite sprite, Color color, float startScale, float endScale, float duration)
+        {
+            var effect = effectPool.Get();
+            effect.InitializeCustom(position, color, sprite != null ? sprite : spellImpactSprite, startScale, endScale, duration, 36, () => effectPool.Release(effect));
+        }
+
         public void SpawnDeathEffect(Vector3 position, Faction faction)
         {
             var effect = effectPool.Get();
@@ -398,6 +639,149 @@ namespace XTD.Battle
         {
             var effect = effectPool.Get();
             effect.InitializeCustom(position, new Color(1f, 0.86f, 0.22f, 0.92f), hitEffectSprite, 0.45f, 1.75f, 0.55f, 32, () => effectPool.Release(effect));
+        }
+
+        public bool TryReleaseDivinePower()
+        {
+            if (Outcome != BattleOutcome.Running)
+            {
+                return false;
+            }
+
+            if (mana < DivinePowerManaCost)
+            {
+                ui.ShowNotice($"神通需要 {DivinePowerManaCost:0} 点费用");
+                return false;
+            }
+
+            mana -= DivinePowerManaCost;
+            var heroClass = flow != null && flow.HasActiveRun ? flow.CurrentHeroClass : HeroClassType.BorderCommander;
+            switch (heroClass)
+            {
+                case HeroClassType.SpiritSummoner:
+                    ReleaseSummonerDivinePower();
+                    break;
+                case HeroClassType.ThunderMage:
+                    ReleaseThunderMageDivinePower();
+                    break;
+                default:
+                    ReleaseCommanderDivinePower();
+                    break;
+            }
+
+            ui.Refresh();
+            CheckOutcome();
+            return true;
+        }
+
+        private void ReleaseCommanderDivinePower()
+        {
+            var damage = 24f + (flow != null && flow.HasActiveRun ? flow.CurrentRun.floor * 4f : 0f);
+            var targets = activeUnits
+                .Where(unit => unit != null && unit.IsAlive && unit.Faction == Faction.Enemy)
+                .ToList();
+
+            foreach (var target in targets)
+            {
+                SpawnWarningCircle(target.transform.position, 1.15f);
+                target.TakeDamage(damage);
+            }
+
+            if (HasEnemyBase)
+            {
+                DamageEnemyBase(damage * 0.75f);
+            }
+            else
+            {
+                var core = EnemyCoreUnit();
+                if (core != null && core.IsAlive && !targets.Contains(core))
+                {
+                    core.TakeDamage(damage);
+                }
+            }
+
+            var allies = activeUnits
+                .Where(unit => unit != null && unit.IsAlive && unit.Faction == Faction.Player)
+                .Take(12)
+                .ToList();
+            foreach (var ally in allies)
+            {
+                ally.AddShield(10f);
+                ally.AddModifier(EffectType.BuffAttack, 0.18f, 5f);
+            }
+
+            morale.AddCharges(1);
+            SpawnDivineEffect(new Vector3(laneX, BattleMidY + 0.9f, 0f), commanderDivineEffectSprite, new Color(1f, 0.78f, 0.22f, 0.92f), 0.72f, 2.2f, 0.85f);
+            SpawnMoraleEffect(new Vector3(laneX, playerBaseY + 1.15f, 0f));
+            ui.ShowNotice($"边境战令：敌军受创 {damage:0}，前线加盾，士气 +1", 1.8f);
+        }
+
+        private void ReleaseSummonerDivinePower()
+        {
+            var militia = catalog.FindUnit("unit_militia");
+            var archer = catalog.FindUnit("unit_archer");
+            var spawned = 0;
+            for (var i = 0; i < 6; i++)
+            {
+                if (militia == null)
+                {
+                    break;
+                }
+
+                var x = Mathf.Lerp(-2.6f, 2.6f, i / 5f);
+                var y = playerBaseY + 0.85f + (i % 2) * 0.36f;
+                var unit = SpawnUnit(militia, Faction.Player, new Vector3(x, y, 0f), true);
+                unit.AddShield(7f);
+                spawned++;
+            }
+
+            for (var i = 0; i < 2; i++)
+            {
+                if (archer == null)
+                {
+                    break;
+                }
+
+                var x = i == 0 ? -1.25f : 1.25f;
+                var unit = SpawnUnit(archer, Faction.Player, new Vector3(x, playerBaseY + 0.55f, 0f), true);
+                unit.AddModifier(EffectType.BuffAttackSpeed, 0.18f, 6f);
+                spawned++;
+            }
+
+            if (spawned > 0)
+            {
+                morale.RegisterSummonedSoldiers(spawned);
+            }
+
+            SpawnDivineEffect(new Vector3(laneX, playerBaseY + 1.1f, 0f), summonerDivineEffectSprite, new Color(0.60f, 1f, 0.82f, 0.9f), 0.65f, 2.1f, 0.9f);
+            ui.ShowNotice($"万灵开阵：立刻召来 {spawned} 名援军并推进士气", 1.8f);
+        }
+
+        private void ReleaseThunderMageDivinePower()
+        {
+            var damage = 38f + (flow != null && flow.HasActiveRun ? flow.CurrentRun.floor * 6f : 0f);
+            var targets = activeUnits
+                .Where(unit => unit != null && unit.IsAlive && unit.Faction == Faction.Enemy)
+                .ToList();
+
+            foreach (var target in targets)
+            {
+                SpawnWarningCircle(target.transform.position, 1.25f);
+                target.TakeDamage(damage);
+                if (target.IsAlive && target.Definition.role != UnitRole.Boss)
+                {
+                    target.AddModifier(EffectType.Stun, 1f, 0.55f);
+                    target.AddModifier(EffectType.Slow, 0.45f, 3.2f);
+                }
+            }
+
+            if (HasEnemyBase)
+            {
+                DamageEnemyBase(damage);
+            }
+
+            SpawnDivineEffect(new Vector3(laneX, BattleMidY + 0.95f, 0f), thunderDivineEffectSprite, new Color(0.65f, 0.88f, 1f, 0.92f), 0.78f, 2.35f, 0.85f);
+            ui.ShowNotice($"九霄雷火：全场雷击 {damage:0}，非首领短暂定身", 1.8f);
         }
 
         public void SpawnWarningCircle(Vector3 position, float radius)
@@ -424,8 +808,11 @@ namespace XTD.Battle
 
         private void Tick(float deltaTime)
         {
-            mana = Mathf.Min(maxMana, mana + manaRegenPerSecond * deltaTime);
+            var manaRegenMultiplier = manaSuppressionTimer > 0f ? 0.55f : 1f;
+            mana = Mathf.Min(maxMana, mana + manaRegenPerSecond * manaRegenMultiplier * deltaTime);
+            manaSuppressionTimer = Mathf.Max(0f, manaSuppressionTimer - deltaTime);
             hitSfxCooldown = Mathf.Max(0f, hitSfxCooldown - deltaTime);
+            TickFloorAffix(deltaTime);
 
             TickEnemyBase(deltaTime);
             TickEnemyCoreSkills(deltaTime);
@@ -441,6 +828,41 @@ namespace XTD.Battle
             CheckOutcome();
         }
 
+        private void TickFloorAffix(float deltaTime)
+        {
+            if (flow == null || !flow.HasActiveRun)
+            {
+                return;
+            }
+
+            var damage = flow.FloorLightningDamage();
+            if (damage <= 0f)
+            {
+                return;
+            }
+
+            floorAffixTimer -= deltaTime;
+            if (floorAffixTimer > 0f)
+            {
+                return;
+            }
+
+            floorAffixTimer = 4.8f;
+            var target = activeUnits
+                .Where(unit => unit != null && unit.IsAlive)
+                .OrderBy(_ => Random.value)
+                .FirstOrDefault();
+            if (target == null)
+            {
+                return;
+            }
+
+            SpawnWarningCircle(target.transform.position, 1.15f);
+            SpawnSpellImpact(target.transform.position);
+            target.TakeDamage(damage);
+            ui.ShowNotice("天雷劫池：落雷击中战场单位");
+        }
+
         private void TickEnemyBase(float deltaTime)
         {
             if (encounter == null || encounter.enemySpawns.Count == 0)
@@ -454,7 +876,8 @@ namespace XTD.Battle
                 return;
             }
 
-            enemySpawnTimer = Mathf.Max(0.2f, encounter.enemySpawnInterval * CoreSpawnIntervalMultiplier());
+            var spawnMultiplier = CoreSpawnIntervalMultiplier() * (flow != null && flow.HasActiveRun ? flow.EnemySpawnIntervalMultiplier() : 1f);
+            enemySpawnTimer = Mathf.Max(0.2f, encounter.enemySpawnInterval * spawnMultiplier);
             var entry = encounter.enemySpawns[Random.Range(0, encounter.enemySpawns.Count)];
             for (var i = 0; i < entry.count; i++)
             {
@@ -481,6 +904,7 @@ namespace XTD.Battle
             }
 
             var enrage = IsCoreEnraged(core);
+            TickEnemyCorePhaseTriggers(core);
             coreAreaSkillTimer -= deltaTime;
             if (coreAreaSkillTimer <= 0f && coreWarningTimer <= 0f)
             {
@@ -493,6 +917,72 @@ namespace XTD.Battle
             {
                 BuffEnemyWave(enrage);
                 coreBuffSkillTimer = enrage ? 5.2f : 8.0f;
+            }
+        }
+
+        private void TickEnemyCorePhaseTriggers(BattleUnit core)
+        {
+            if (core == null || encounter == null || encounter.nodeType != MapNodeType.FinalBoss)
+            {
+                return;
+            }
+
+            var hpRatio = core.CurrentHp / Mathf.Max(1f, EnemyObjectiveMaxHp);
+            if (!corePhaseTwoTriggered && hpRatio <= 0.70f)
+            {
+                corePhaseTwoTriggered = true;
+                coreAreaSkillTimer = Mathf.Min(coreAreaSkillTimer, 1.25f);
+                coreBuffSkillTimer = Mathf.Min(coreBuffSkillTimer, 1.8f);
+                SpawnEmergencyEnemyWave(1.15f);
+                SpawnMoraleEffect(core.transform.position);
+                ui.ShowNotice("混沌魔君二阶段：妖潮加速，首领技能提前", 2.0f);
+            }
+
+            if (!corePhaseThreeTriggered && hpRatio <= 0.40f)
+            {
+                corePhaseThreeTriggered = true;
+                mana = Mathf.Max(0f, mana - 2f);
+                manaSuppressionTimer = 10f;
+                coreAreaSkillTimer = Mathf.Min(coreAreaSkillTimer, 0.8f);
+                SpawnEmergencyEnemyWave(0.75f);
+                DamagePlayerStructures(16f);
+                SpawnMoraleEffect(core.transform.position);
+                ui.ShowNotice("混沌魔君三阶段：费用回流减弱，阵地遭到冲击", 2.2f);
+            }
+        }
+
+        private void SpawnEmergencyEnemyWave(float yOffset)
+        {
+            if (encounter == null || encounter.enemySpawns.Count == 0)
+            {
+                return;
+            }
+
+            var wave = encounter.enemySpawns
+                .OrderByDescending(entry => entry.unit != null ? entry.unit.maxHp + entry.unit.attack * 3f : 0f)
+                .Take(2)
+                .ToList();
+            foreach (var entry in wave)
+            {
+                var count = Mathf.Max(1, entry.count);
+                for (var i = 0; i < count; i++)
+                {
+                    SpawnUnit(entry.unit, Faction.Enemy, RandomEnemySpawnPosition(yOffset + i * 0.20f), false);
+                }
+            }
+        }
+
+        private void DamagePlayerStructures(float damage)
+        {
+            var structures = activeUnits
+                .Where(unit => unit != null && unit.IsAlive && unit.Faction == Faction.Player && unit.Definition.role == UnitRole.Structure)
+                .OrderByDescending(unit => unit.transform.position.y)
+                .Take(4)
+                .ToList();
+            foreach (var structure in structures)
+            {
+                SpawnWarningCircle(structure.transform.position, 1.05f);
+                structure.TakeDamage(damage);
             }
         }
 
@@ -568,7 +1058,15 @@ namespace XTD.Battle
 
         private void ResolveCard(CardDefinition card, bool strengthened, Vector3 targetPosition)
         {
+            if (card.type == CardType.Curse)
+            {
+                ResolveCurseCard(card, targetPosition);
+                return;
+            }
+
             var spawnedSoldiers = 0;
+            var structureIndex = 0;
+            var totalStructures = StructureSpawnCount(card);
             var moraleUnits = new List<BattleUnit>();
             foreach (var spawn in card.unitSpawns)
             {
@@ -589,9 +1087,13 @@ namespace XTD.Battle
                 {
                     var column = i % columns;
                     var row = i / columns;
-                    var x = spawnCenter.x + (column - (columns - 1) * 0.5f) * spawn.spacing + Random.Range(-spawn.yJitter, spawn.yJitter);
-                    var y = spawnCenter.y - row * spawn.spacing * 0.65f;
-                    var unit = SpawnUnit(spawn.unit, Faction.Player, new Vector3(x, y, 0f), true);
+                    var position = spawn.unit.role == UnitRole.Structure
+                        ? StructureSpawnPosition(spawnCenter, structureIndex++, totalStructures)
+                        : new Vector3(
+                            spawnCenter.x + (column - (columns - 1) * 0.5f) * spawn.spacing + Random.Range(-spawn.yJitter, spawn.yJitter),
+                            spawnCenter.y - row * spawn.spacing * 0.65f,
+                            0f);
+                    var unit = SpawnUnit(spawn.unit, Faction.Player, position, true);
                     if (unit.Definition.role == UnitRole.Soldier || unit.Definition.role == UnitRole.Elite)
                     {
                         spawnedSoldiers++;
@@ -605,6 +1107,13 @@ namespace XTD.Battle
             }
 
             ApplyMoraleUnitBonus(card, moraleUnits);
+            var structureMorale = flow != null && flow.HasActiveRun ? flow.MoraleFromStructureCard(card) : 0;
+            if (structureMorale > 0)
+            {
+                morale.AddCharges(structureMorale);
+                SpawnMoraleEffect(targetPosition);
+                ui.ShowNotice($"点将台激发：士气 +{structureMorale}");
+            }
 
             if (spawnedSoldiers > 0)
             {
@@ -614,6 +1123,40 @@ namespace XTD.Battle
             foreach (var effect in card.effects)
             {
                 ResolveEffect(effect, strengthened, targetPosition, card.releaseRule == CardReleaseRule.Anywhere);
+            }
+        }
+
+        private void ResolveCurseCard(CardDefinition card, Vector3 targetPosition)
+        {
+            if (flow != null && flow.HasActiveRun && flow.ConvertCurseToMorale())
+            {
+                morale.AddCharges(1);
+                SpawnMoraleEffect(targetPosition);
+                ui.ShowNotice($"镇煞葫芦化解诅咒：士气 +1");
+                return;
+            }
+
+            switch (card.id)
+            {
+                case "card_curse_karmic_fire":
+                    DamagePlayerBase(8f);
+                    SpawnSpellImpact(PlayerBaseViewPosition());
+                    ui.ShowNotice("业火缠身：我方基地受损");
+                    break;
+                case "card_curse_demon_fog":
+                    mana = Mathf.Max(0f, mana - 2f);
+                    SpawnWarningCircle(targetPosition, 1.1f);
+                    ui.ShowNotice("妖雾侵心：费用 -2");
+                    break;
+                default:
+                    var enemy = catalog.FindUnit("enemy_grunt");
+                    if (enemy != null)
+                    {
+                        SpawnUnit(enemy, Faction.Enemy, RandomEnemySpawnPosition(0.45f), false);
+                    }
+
+                    ui.ShowNotice("因果债契：额外妖兵来袭");
+                    break;
             }
         }
 
@@ -650,8 +1193,29 @@ namespace XTD.Battle
                 CardType.Soldier => $"士气强化：{card.displayName} 额外召唤 1 个单位",
                 CardType.EliteSoldier => $"士气强化：{card.displayName} 登场获得护盾",
                 CardType.Hero => $"士气强化：{card.displayName} 登场短时增伤",
+                CardType.Tactic => $"士气强化：{card.displayName} 效果提高",
                 _ => $"士气强化：{card.displayName}"
             };
+        }
+
+        private IReadOnlyList<string> BuildEnemySkillHints()
+        {
+            if (!IsBossLikeEncounter)
+            {
+                return new[] { "妖兵潮汐  持续", "据点守备  持续" };
+            }
+
+            if (encounter != null && encounter.nodeType == MapNodeType.FinalBoss)
+            {
+                return new[] { "混沌降临  12秒", "灭世雷劫  18秒", "魔君怒吼  23秒", "深渊漩涡  29秒" };
+            }
+
+            if (encounter != null && encounter.nodeType == MapNodeType.SmallBoss)
+            {
+                return new[] { "首领蓄力  10秒", "妖兵号令  16秒", "狂暴半血  被动" };
+            }
+
+            return new[] { "精英威压  9秒", "妖兵号令  15秒", "半血狂暴  被动" };
         }
 
         private Vector3 ResolveSpawnCenter(CardDefinition card, Vector3 targetPosition)
@@ -660,6 +1224,119 @@ namespace XTD.Battle
             var y = card.releaseRule == CardReleaseRule.PlayerSide
                 ? Mathf.Clamp(targetPosition.y, playerBaseY + 0.55f, BattleMidY - 0.2f)
                 : targetPosition.y;
+            return new Vector3(x, y, 0f);
+        }
+
+        private bool CanPlaceStructures(CardDefinition card, Vector3 targetPosition, out string reason)
+        {
+            reason = string.Empty;
+            var planned = PlannedStructurePositions(card, targetPosition);
+            for (var i = 0; i < planned.Count; i++)
+            {
+                var position = planned[i];
+                if (position.x < placementMinX + StructurePlacementRadius || position.x > placementMaxX - StructurePlacementRadius)
+                {
+                    reason = "建筑超出战场范围";
+                    return false;
+                }
+
+                if (position.y > BattleMidY - 0.2f)
+                {
+                    reason = "建筑不能越过中线";
+                    return false;
+                }
+
+                if (position.y < playerBaseY + 0.35f)
+                {
+                    reason = "建筑不能放在手牌区或基地后方";
+                    return false;
+                }
+
+                for (var j = i + 1; j < planned.Count; j++)
+                {
+                    if (Vector2.Distance(position, planned[j]) < StructurePlacementMinDistance)
+                    {
+                        reason = "建筑之间需要留出空位";
+                        return false;
+                    }
+                }
+
+                foreach (var unit in activeUnits)
+                {
+                    if (unit == null || !unit.IsAlive || unit.Faction != Faction.Player || unit.Definition.role != UnitRole.Structure)
+                    {
+                        continue;
+                    }
+
+                    if (Vector2.Distance(position, unit.transform.position) < StructurePlacementMinDistance)
+                    {
+                        reason = "这里已有建筑";
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        private List<Vector3> PlannedStructurePositions(CardDefinition card, Vector3 targetPosition)
+        {
+            var positions = new List<Vector3>();
+            if (!CardPlacesStructure(card))
+            {
+                return positions;
+            }
+
+            var center = ResolveSpawnCenter(card, targetPosition);
+            var total = StructureSpawnCount(card);
+            var index = 0;
+            foreach (var spawn in card.unitSpawns)
+            {
+                if (spawn?.unit == null || spawn.unit.role != UnitRole.Structure)
+                {
+                    continue;
+                }
+
+                for (var i = 0; i < spawn.count; i++)
+                {
+                    positions.Add(StructureSpawnPosition(center, index++, total));
+                }
+            }
+
+            return positions;
+        }
+
+        private static int StructureSpawnCount(CardDefinition card)
+        {
+            if (card == null)
+            {
+                return 0;
+            }
+
+            var total = 0;
+            foreach (var spawn in card.unitSpawns)
+            {
+                if (spawn?.unit != null && spawn.unit.role == UnitRole.Structure)
+                {
+                    total += Mathf.Max(0, spawn.count);
+                }
+            }
+
+            return total;
+        }
+
+        private static Vector3 StructureSpawnPosition(Vector3 center, int index, int total)
+        {
+            if (total <= 1)
+            {
+                return center;
+            }
+
+            var columns = Mathf.Max(1, Mathf.CeilToInt(Mathf.Sqrt(total)));
+            var column = index % columns;
+            var row = index / columns;
+            var x = center.x + (column - (columns - 1) * 0.5f) * StructurePlacementSpacing;
+            var y = center.y - row * StructurePlacementSpacing * 0.78f;
             return new Vector3(x, y, 0f);
         }
 
@@ -687,6 +1364,40 @@ namespace XTD.Battle
             return DemoContentFactory.CreateCatalog();
         }
 
+        private void EnsurePresentationSprites()
+        {
+            playerProjectileSprite ??= LoadResourceSprite(ProjectileResourcePath);
+            enemyProjectileSprite ??= playerProjectileSprite;
+            hitEffectSprite ??= LoadResourceSprite(HitEffectResourcePath);
+            spellImpactSprite ??= LoadResourceSprite(SpellImpactResourcePath) ?? hitEffectSprite;
+            commanderDivineEffectSprite ??= LoadResourceSprite(CommanderDivineEffectResourcePath) ?? spellImpactSprite;
+            summonerDivineEffectSprite ??= LoadResourceSprite(SummonerDivineEffectResourcePath) ?? spellImpactSprite;
+            thunderDivineEffectSprite ??= LoadResourceSprite(ThunderDivineEffectResourcePath) ?? spellImpactSprite;
+        }
+
+        private static Sprite LoadResourceSprite(string resourcePath)
+        {
+            var sprite = Resources.Load<Sprite>(resourcePath);
+            if (sprite != null)
+            {
+                return sprite;
+            }
+
+            var texture = Resources.Load<Texture2D>(resourcePath);
+            if (texture == null)
+            {
+                return null;
+            }
+
+            sprite = Sprite.Create(
+                texture,
+                new Rect(0f, 0f, texture.width, texture.height),
+                new Vector2(0.5f, 0.5f),
+                256f);
+            sprite.name = texture.name;
+            return sprite;
+        }
+
         private void EnsureBaseViews()
         {
             if (playerBaseView == null)
@@ -699,14 +1410,11 @@ namespace XTD.Battle
                 enemyBaseView = CreateBaseView("Enemy Base View");
             }
 
-            var playerBaseSprite = catalog.FindUnit("unit_incense_barracks")?.art;
-            var enemyBaseSprite = catalog.FindUnit("unit_roadblock")?.art ?? catalog.FindUnit("enemy_alpha")?.art;
-
-            playerBaseView.Initialize(Faction.Player, playerBaseSprite, PlayerBaseViewPosition(), 0.85f, CurrentPlayerBattleMaxHp());
+            playerBaseView.Initialize(Faction.Player, null, PlayerBaseViewPosition(), 0.85f, CurrentPlayerBattleMaxHp(), false);
             enemyBaseView.gameObject.SetActive(HasEnemyBase);
             if (HasEnemyBase)
             {
-                enemyBaseView.Initialize(Faction.Enemy, enemyBaseSprite, EnemyBaseViewPosition(), 0.92f, EnemyBaseHp);
+                enemyBaseView.Initialize(Faction.Enemy, null, EnemyBaseViewPosition(), 0.92f, EnemyBaseHp, false);
             }
         }
 
@@ -728,7 +1436,7 @@ namespace XTD.Battle
 
         private Vector3 PlayerBaseViewPosition()
         {
-            return new Vector3(laneX, playerBaseY - 0.12f, 0f);
+            return new Vector3(laneX, playerBaseY - 1.92f, 0f);
         }
 
         private Vector3 EnemyBaseViewPosition()
@@ -758,8 +1466,9 @@ namespace XTD.Battle
         {
             var value = strengthened ? effect.value * 1.5f : effect.value;
             var duration = strengthened ? effect.duration * 1.25f : effect.duration;
-            var isPlacedDamage = usePlacementTarget && (effect.effectType == EffectType.Damage || effect.effectType == EffectType.AreaDamage);
-            var targets = isPlacedDamage
+            var usesPlacementTargets = usePlacementTarget && effect.effectType is EffectType.Damage or EffectType.AreaDamage or EffectType.Slow or EffectType.Stun or EffectType.Burn or EffectType.Poison or EffectType.Knockback;
+            var isPlacedDamage = usesPlacementTargets && (effect.effectType == EffectType.Damage || effect.effectType == EffectType.AreaDamage);
+            var targets = usesPlacementTargets
                 ? SelectTargetsNearPosition(effect.targetRule, targetPosition, effect.radius, effect.effectType)
                 : SelectTargets(effect.targetRule, effect.radius);
 
@@ -797,9 +1506,24 @@ namespace XTD.Battle
                     break;
                 case EffectType.BuffAttack:
                 case EffectType.BuffAttackSpeed:
+                case EffectType.Slow:
+                case EffectType.Stun:
+                case EffectType.Burn:
+                case EffectType.Poison:
                     foreach (var target in targets)
                     {
                         target.AddModifier(effect.effectType, value, duration);
+                        if (effect.effectType is EffectType.Slow or EffectType.Stun or EffectType.Burn or EffectType.Poison)
+                        {
+                            SpawnWarningCircle(target.transform.position, effect.effectType == EffectType.Stun ? 0.95f : 0.75f);
+                        }
+                    }
+                    break;
+                case EffectType.Knockback:
+                    foreach (var target in targets)
+                    {
+                        target.KnockbackFrom(usePlacementTarget ? targetPosition : new Vector3(laneX, BattleMidY, 0f), value);
+                        SpawnWarningCircle(target.transform.position, 0.85f);
                     }
                     break;
                 case EffectType.DrawCard:
@@ -812,6 +1536,18 @@ namespace XTD.Battle
                     var gainedMorale = Mathf.Max(1, Mathf.RoundToInt(value));
                     morale.AddCharges(gainedMorale);
                     ui.ShowNotice($"战鼓激发：士气 +{gainedMorale}，下一张出兵牌会强化");
+                    break;
+                case EffectType.GainGold:
+                    if (flow != null && flow.HasActiveRun)
+                    {
+                        var gainedGold = Mathf.Max(1, Mathf.RoundToInt(value));
+                        flow.GainGoldDuringBattle(gainedGold);
+                        ui.ShowNotice($"聚宝生效：金币 +{gainedGold}");
+                    }
+                    else
+                    {
+                        ui.ShowNotice("聚宝效果需要从迷宫探索进入战斗");
+                    }
                     break;
             }
         }
@@ -1001,6 +1737,23 @@ namespace XTD.Battle
                 : 1f;
         }
 
+        public float RangeMultiplierFor(UnitDefinition unit, Faction faction)
+        {
+            return flow != null && flow.HasActiveRun ? flow.UnitRangeMultiplier(unit, faction) : 1f;
+        }
+
+        public float MaxHpMultiplierFor(UnitDefinition unit, Faction faction)
+        {
+            return flow != null && flow.HasActiveRun ? flow.UnitMaxHpMultiplier(unit, faction) : 1f;
+        }
+
+        public float ProductionIntervalMultiplierFor(UnitDefinition unit, Faction faction)
+        {
+            return unit != null && faction == Faction.Player && unit.role == UnitRole.Structure && flow != null && flow.HasActiveRun
+                ? flow.StructureProductionIntervalMultiplier()
+                : 1f;
+        }
+
         private void ApplyRunBattleModifiers()
         {
             maxMana = baseMaxMana;
@@ -1015,6 +1768,7 @@ namespace XTD.Battle
 
             maxMana += flow.ExtraMaxMana();
             maxCommand += flow.PlayerExtraCommand();
+            manaRegenPerSecond *= flow.ManaRegenMultiplier();
             morale.SoldiersPerCharge = flow.MoraleThreshold();
         }
 
@@ -1117,7 +1871,7 @@ namespace XTD.Battle
             {
                 battleMusicClip = CreateFallbackMusicClip();
                 usingFallbackMusic = true;
-                Debug.Log("X-TD 外部 BGM 暂未加载，使用程序生成的临时战斗 BGM。");
+                Debug.Log("神魔镇荒外部 BGM 暂未加载，使用程序生成的临时战斗 BGM。");
             }
 
             if (!EnsureAudioClipData(battleMusicClip, "战斗 BGM"))
@@ -1162,7 +1916,7 @@ namespace XTD.Battle
             clip = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>(BattleMusicAssetPath);
             if (clip != null)
             {
-                Debug.Log("X-TD 使用编辑器资源路径加载战斗 BGM。");
+                Debug.Log("神魔镇荒使用编辑器资源路径加载战斗 BGM。");
                 return clip;
             }
 
@@ -1173,7 +1927,7 @@ namespace XTD.Battle
                 clip = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>(path);
                 if (clip != null)
                 {
-                    Debug.Log($"X-TD 使用搜索到的音频资源加载战斗 BGM：{path}");
+                    Debug.Log($"神魔镇荒使用搜索到的音频资源加载战斗 BGM：{path}");
                     return clip;
                 }
             }
@@ -1298,13 +2052,13 @@ namespace XTD.Battle
 
             if (clip.loadState == AudioDataLoadState.Failed)
             {
-                Debug.LogWarning($"X-TD 音频加载失败：{label}");
+                Debug.LogWarning($"神魔镇荒音频加载失败：{label}");
                 return false;
             }
 
             if (clip.loadState == AudioDataLoadState.Unloaded && !clip.LoadAudioData())
             {
-                Debug.LogWarning($"X-TD 音频数据未能载入：{label}");
+                Debug.LogWarning($"神魔镇荒音频数据未能载入：{label}");
                 return false;
             }
 

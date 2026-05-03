@@ -1,4 +1,4 @@
-# X-TD 内容配置字段清单
+# 神魔镇荒 内容配置字段清单
 
 更新时间：2026-05-02  
 用途：记录当前 ScriptableObject 配置字段，方便后续改成 CSV/JSON 导入或继续扩展编辑器工具。
@@ -143,3 +143,4 @@
 | `selectedNodeKeys` | 已走房间 |
 | `pendingCardRewardIds` | 待选择卡牌奖励 |
 | `pendingCardRewardPickCount` | 待选择奖励张数 |
+

@@ -8,6 +8,7 @@ namespace XTD.Content
     {
         public int floor = 1;
         public int row = 1;
+        public HeroClassType heroClass = HeroClassType.BorderCommander;
         public int gold;
         public float playerHp = 100f;
         public int heroExperience;
@@ -20,8 +21,17 @@ namespace XTD.Content
         public List<string> permanentArtifactIds = new();
         public List<int> availableNodeIndices = new();
         public List<string> selectedNodeKeys = new();
+        public List<string> eventLog = new();
+        public List<FloorAffixType> floorAffixes = new();
         public List<string> pendingCardRewardIds = new();
         public int pendingCardRewardPickCount;
+        public int pendingCardRewardSkipGold;
+        public List<string> shopOfferCardIds = new();
+        public List<string> shopBoughtCardIds = new();
+        public int shopOfferRerollCount;
+        public bool shopRemoveUsed;
+        public int artifactRefreshesRemaining = 2;
+        public int artifactOfferRerollCount;
 
         public RunState Clone()
         {
@@ -29,6 +39,7 @@ namespace XTD.Content
             {
                 floor = floor,
                 row = row,
+                heroClass = heroClass,
                 gold = gold,
                 playerHp = playerHp,
                 heroExperience = heroExperience,
@@ -41,8 +52,17 @@ namespace XTD.Content
                 permanentArtifactIds = new List<string>(permanentArtifactIds),
                 availableNodeIndices = new List<int>(availableNodeIndices),
                 selectedNodeKeys = new List<string>(selectedNodeKeys),
+                eventLog = new List<string>(eventLog),
+                floorAffixes = new List<FloorAffixType>(floorAffixes),
                 pendingCardRewardIds = new List<string>(pendingCardRewardIds),
-                pendingCardRewardPickCount = pendingCardRewardPickCount
+                pendingCardRewardPickCount = pendingCardRewardPickCount,
+                pendingCardRewardSkipGold = pendingCardRewardSkipGold,
+                shopOfferCardIds = new List<string>(shopOfferCardIds),
+                shopBoughtCardIds = new List<string>(shopBoughtCardIds),
+                shopOfferRerollCount = shopOfferRerollCount,
+                shopRemoveUsed = shopRemoveUsed,
+                artifactRefreshesRemaining = artifactRefreshesRemaining,
+                artifactOfferRerollCount = artifactOfferRerollCount
             };
         }
     }

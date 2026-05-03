@@ -1,10 +1,10 @@
-# X-TD 下一阶段开发计划
+# 神魔镇荒 下一阶段开发计划
 
 版本：v0.2  
 状态：已完成基础实现
 更新时间：2026-05-02  
-承接文档：[X-TD MVP 实现状态](./mvp-implementation-status.md)
-实现记录：[X-TD v0.2 实现状态](./v0.2-implementation-status.md)
+承接文档：[神魔镇荒 MVP 实现状态](./mvp-implementation-status.md)
+实现记录：[神魔镇荒 v0.2 实现状态](./v0.2-implementation-status.md)
 
 ## 1. 阶段目标
 
@@ -291,3 +291,4 @@ P3：暂缓
 - 不做 Steam 打包发布流程。
 
 这些内容放到 v0.3 或更后面，等第一个角色和第一个迷宫真正好玩之后再扩。
+

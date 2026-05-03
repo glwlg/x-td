@@ -148,7 +148,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bfbad82d85d29ec4da3e6288ed10a5b2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: XTD.Runtime::XTD.Presentation.MainMenuController
-  catalog: {fileID: 0}
+  catalog: {fileID: 11400000, guid: a4b1a79dfd6afe940b1c21a927ddf765, type: 2}
 --- !u!4 &13342368
 Transform:
   m_ObjectHideFlags: 0

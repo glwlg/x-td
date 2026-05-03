@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace XTD.Content
 {
-    [CreateAssetMenu(menuName = "X-TD/Content/Content Catalog", fileName = "ContentCatalog")]
+    [CreateAssetMenu(menuName = "神魔镇荒/Content/Content Catalog", fileName = "ContentCatalog")]
     public sealed class ContentCatalog : ScriptableObject
     {
         public List<CardDefinition> cards = new();

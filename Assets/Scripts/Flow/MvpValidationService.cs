@@ -119,6 +119,37 @@ namespace XTD.Flow
             {
                 report.issues.Add("所有遭遇至少需要一组敌方派兵配置。");
             }
+
+            ValidateHeroClassStartingDecks(catalog, report);
+        }
+
+        private static void ValidateHeroClassStartingDecks(ContentCatalog catalog, MvpValidationReport report)
+        {
+            foreach (var heroClass in new[] { HeroClassType.BorderCommander, HeroClassType.SpiritSummoner, HeroClassType.ThunderMage })
+            {
+                var run = DemoContentFactory.CreateStartingRun(catalog, heroClass);
+                if (run.deckCardIds.Count < 8)
+                {
+                    report.issues.Add($"{GameFlowController.HeroClassName(heroClass)} 初始卡组过少，当前 {run.deckCardIds.Count} 张。");
+                }
+
+                foreach (var cardId in run.deckCardIds)
+                {
+                    if (catalog.FindCard(cardId) == null)
+                    {
+                        report.issues.Add($"{GameFlowController.HeroClassName(heroClass)} 初始卡组包含不存在的卡牌：{cardId}。");
+                    }
+                }
+
+                var hasProduction = run.deckCardIds
+                    .Select(id => catalog.FindCard(id))
+                    .Where(card => card != null)
+                    .Any(card => card.type == CardType.Structure && card.unitSpawns.Any(spawn => spawn.unit != null && spawn.unit.ProducesUnits));
+                if (!hasProduction)
+                {
+                    report.issues.Add($"{GameFlowController.HeroClassName(heroClass)} 初始卡组缺少生产建筑。");
+                }
+            }
         }
 
         private static void ValidateMap(int seed, MvpValidationReport report)
@@ -133,21 +164,26 @@ namespace XTD.Flow
             for (var i = 0; i < rows.Count; i++)
             {
                 var nodes = rows[i];
-                if (nodes.Count < 2 || nodes.Count > 3)
-                {
-                    report.issues.Add($"第 {i + 1} 行节点数量应为 2-3，当前为 {nodes.Count}。");
-                }
-
                 var row = (i % 10) + 1;
                 var floor = (i / 10) + 1;
+                var fixedRow = row is 1 or 5 or 10;
+                if (fixedRow && nodes.Count != 1)
+                {
+                    report.issues.Add($"迷宫 {floor} · 房间 {row}/10 应为单个固定房间，当前为 {nodes.Count} 个。");
+                }
+                else if (!fixedRow && (nodes.Count < 2 || nodes.Count > 3))
+                {
+                    report.issues.Add($"迷宫 {floor} · 房间 {row}/10 节点数量应为 2-3，当前为 {nodes.Count}。");
+                }
+
                 if (row == 1 && nodes.Any(node => node.NodeType != MapNodeType.NormalMonster))
                 {
-                    report.issues.Add($"第 {floor} 层第 1 行必须全部为普通怪物节点。");
+                    report.issues.Add($"迷宫 {floor} 的第一个房间必须为普通怪物节点。");
                 }
 
                 if (row == 5 && nodes.Any(node => node.NodeType != MapNodeType.EliteMonster))
                 {
-                    report.issues.Add($"第 {floor} 层第 5 行必须全部为精英怪物节点。");
+                    report.issues.Add($"迷宫 {floor} · 房间 5/10 必须为精英怪物节点。");
                 }
 
                 if (row == 10)
@@ -155,13 +191,25 @@ namespace XTD.Flow
                     var expected = floor == 3 ? MapNodeType.FinalBoss : MapNodeType.SmallBoss;
                     if (nodes.Any(node => node.NodeType != expected))
                     {
-                        report.issues.Add($"第 {floor} 层第 10 行首领类型错误。");
+                        report.issues.Add($"迷宫 {floor} · 房间 10/10 首领类型错误。");
                     }
                 }
 
                 if (row < 5 && nodes.Any(node => node.NodeType != MapNodeType.NormalMonster))
                 {
-                    report.issues.Add($"第 {floor} 层第 {row} 行不应出现特殊节点。");
+                    report.issues.Add($"迷宫 {floor} · 房间 {row}/10 不应出现特殊节点。");
+                }
+
+                if (row < 10)
+                {
+                    var nextRow = rows.FirstOrDefault(candidate =>
+                        candidate.Count > 0 &&
+                        candidate[0].Floor == floor &&
+                        candidate[0].Row == row + 1);
+                    if (nextRow != null && nextRow.Count > 1 && nodes.Any(node => node.NextNodeIndices.Count >= nextRow.Count))
+                    {
+                        report.issues.Add($"迷宫 {floor} · 房间 {row}/10 存在单个房间连接上方全部房间的路线。");
+                    }
                 }
             }
 
@@ -176,7 +224,7 @@ namespace XTD.Flow
             {
                 if (!afterEliteTypes.Contains(required))
                 {
-                    report.issues.Add($"第 5 行之后缺少 {GameFlowController.NodeTypeName(required)}。");
+                    report.issues.Add($"精英房间之后缺少 {GameFlowController.NodeTypeName(required)}。");
                 }
             }
 

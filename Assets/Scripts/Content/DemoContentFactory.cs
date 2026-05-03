@@ -7,6 +7,11 @@ namespace XTD.Content
 {
     public static class DemoContentFactory
     {
+        private const string ProjectAiArtPrefix = "Assets/_Project/Art/AI/";
+        private const string ResourcesAssetPrefix = "Assets/Resources/";
+        private const string RuntimeAiArtPrefix = "Art/AI/";
+
+        private static readonly Dictionary<string, Sprite> LoadedSprites = new(StringComparer.OrdinalIgnoreCase);
         public static ContentCatalog CreateCatalog()
         {
             var catalog = ScriptableObject.CreateInstance<ContentCatalog>();
@@ -132,6 +137,7 @@ namespace XTD.Content
             {
                 var card = CreateCardPayload(level);
                 card.effects.Add(Effect(EffectType.AreaDamage, TargetRule.AllEnemies, 18 + level * 12, 0, 1.25f + level * 0.25f));
+                if (level >= 2) card.effects.Add(Effect(EffectType.Burn, TargetRule.AllEnemies, 4f + level * 1.5f, 3.2f, 1.25f + level * 0.25f));
                 return card;
             });
 
@@ -139,6 +145,7 @@ namespace XTD.Content
             {
                 var card = CreateCardPayload(level);
                 card.effects.Add(Effect(EffectType.Damage, TargetRule.AllEnemies, 24 + level * 14, 0, 0.9f + level * 0.15f));
+                if (level >= 3) card.effects.Add(Effect(EffectType.Knockback, TargetRule.AllEnemies, 0.75f, 0, 1.15f));
                 return card;
             });
 
@@ -156,6 +163,90 @@ namespace XTD.Content
                 card.effects.Add(Effect(EffectType.Shield, TargetRule.AllFriendlyUnits, 12 + level * 12, 0, 99f));
                 return card;
             });
+            UpsertFixedCard(catalog, "card_binding_talisman", "缚妖索符", CardType.Debuff, CardRarity.Uncommon, 1, 2, CardReleaseRule.Anywhere, "在目标点减速敌人，并短暂定身。", "Assets/_Project/Art/AI/Cards/card_binding_talisman.png", () =>
+            {
+                var card = new CardPayload();
+                card.effects.Add(Effect(EffectType.Slow, TargetRule.AllEnemies, 0.55f, 4.5f, 1.65f));
+                card.effects.Add(Effect(EffectType.Stun, TargetRule.AllEnemies, 1f, 0.45f, 1.35f));
+                return card;
+            });
+            UpsertFixedCard(catalog, "card_healing_rain", "甘霖咒", CardType.Tactic, CardRarity.Uncommon, 1, 2, CardReleaseRule.None, "治疗己方最靠前的数个单位。", "Assets/_Project/Art/AI/Cards/card_healing_rain.png", () =>
+            {
+                var card = new CardPayload();
+                card.effects.Add(Effect(EffectType.Heal, TargetRule.FriendlyFrontline, 26, 0, 99f));
+                card.effects.Add(Effect(EffectType.Shield, TargetRule.FriendlyFrontline, 8, 0, 99f));
+                return card;
+            });
+            UpsertFixedCard(catalog, "card_cloud_banner", "流云军令", CardType.Economy, CardRarity.Rare, 1, 1, CardReleaseRule.None, "抽 1 张牌并回复费用，用来重整手牌节奏。", "Assets/_Project/Art/AI/Cards/card_cloud_banner.png", () =>
+            {
+                var card = new CardPayload();
+                card.effects.Add(Effect(EffectType.DrawCard, TargetRule.Self, 1, 0, 0));
+                card.effects.Add(Effect(EffectType.GainMana, TargetRule.Self, 2, 0, 0));
+                return card;
+            });
+            UpsertFixedCard(catalog, "card_break_formation", "破阵金令", CardType.Debuff, CardRarity.Rare, 1, 3, CardReleaseRule.None, "压制敌方前线攻击，为兵潮争取反推窗口。", "Assets/_Project/Art/AI/Cards/card_break_formation.png", () =>
+            {
+                var card = new CardPayload();
+                card.effects.Add(Effect(EffectType.BuffAttack, TargetRule.EnemyFrontline, -0.35f, 5.5f, 99f));
+                return card;
+            });
+            UpsertFixedCard(catalog, "card_poison_gourd", "瘴毒葫芦", CardType.Debuff, CardRarity.Rare, 1, 3, CardReleaseRule.Anywhere, "在目标点释放毒雾，持续腐蚀并减速敌人。", "Assets/_Project/Art/AI/Cards/card_poison_gourd.png", () =>
+            {
+                var card = new CardPayload();
+                card.effects.Add(Effect(EffectType.Poison, TargetRule.AllEnemies, 5.5f, 5.0f, 1.85f));
+                card.effects.Add(Effect(EffectType.Slow, TargetRule.AllEnemies, 0.35f, 5.0f, 1.85f));
+                return card;
+            });
+            UpsertFixedCard(catalog, "card_mountain_seal", "推山印", CardType.Spell, CardRarity.Uncommon, 1, 2, CardReleaseRule.Anywhere, "击退目标点附近敌人，并造成少量伤害。", "Assets/_Project/Art/AI/Cards/card_mountain_seal.png", () =>
+            {
+                var card = new CardPayload();
+                card.effects.Add(Effect(EffectType.Knockback, TargetRule.AllEnemies, 1.05f, 0, 1.55f));
+                card.effects.Add(Effect(EffectType.AreaDamage, TargetRule.AllEnemies, 14, 0, 1.55f));
+                return card;
+            });
+            UpsertFixedCard(catalog, "card_treasure_talisman", "聚宝符", CardType.Economy, CardRarity.Uncommon, 1, 1, CardReleaseRule.None, "立刻获得少量金币，并抽 1 张牌。", "Assets/_Project/Art/AI/Cards/card_treasure_talisman.png", () =>
+            {
+                var card = new CardPayload();
+                card.effects.Add(Effect(EffectType.GainGold, TargetRule.Self, 12, 0, 0));
+                card.effects.Add(Effect(EffectType.DrawCard, TargetRule.Self, 1, 0, 0));
+                return card;
+            });
+            UpsertFixedCard(catalog, "card_star_river_decree", "星河诏令", CardType.Tactic, CardRarity.Epic, 3, 4, CardReleaseRule.None, "抽 2 张牌，并获得 1 点士气。", "Assets/_Project/Art/AI/Cards/card_star_river_decree.png", () =>
+            {
+                var card = new CardPayload();
+                card.effects.Add(Effect(EffectType.DrawCard, TargetRule.Self, 2, 0, 0));
+                card.effects.Add(Effect(EffectType.GainMorale, TargetRule.Self, 1, 0, 0));
+                return card;
+            });
+            UpsertFixedCard(catalog, "card_pangu_spark", "盘古残火", CardType.Spell, CardRarity.Legendary, 3, 7, CardReleaseRule.Anywhere, "在目标点爆开大范围洪荒残火。", "Assets/_Project/Art/AI/Cards/card_pangu_spark.png", () =>
+            {
+                var card = new CardPayload();
+                card.effects.Add(Effect(EffectType.AreaDamage, TargetRule.AllEnemies, 95, 0, 2.45f));
+                return card;
+            });
+            UpsertFixedCard(catalog, "card_nezha_order", "哪吒点兵", CardType.EliteSoldier, CardRarity.Epic, 3, 5, CardReleaseRule.PlayerSide, "一次性召来 4 名雷鼓卫，并给前线套盾。", "Assets/_Project/Art/AI/Cards/card_nezha_order.png", () =>
+            {
+                var card = new CardPayload();
+                card.spawns.Add(Spawn(thunderGuard, 4));
+                card.effects.Add(Effect(EffectType.Shield, TargetRule.FriendlyFrontline, 24, 0, 99f));
+                return card;
+            });
+            UpsertFixedCard(catalog, "card_heavenly_workshop", "天工营盘", CardType.Structure, CardRarity.Epic, 3, 5, CardReleaseRule.PlayerSide, "同时放置香火兵营和灵弩坛，快速形成生产线。", "Assets/_Project/Art/AI/Cards/card_heavenly_workshop.png", () =>
+            {
+                var card = new CardPayload();
+                card.spawns.Add(Spawn(barracks, 1));
+                card.spawns.Add(Spawn(archerAltar, 1));
+                return card;
+            });
+            UpsertCurseCard(catalog, "card_curse_karmic_fire", "业火缠身", "拖进战场时会灼伤我方基地。", "Assets/_Project/Art/AI/Cards/card_curse_karmic_fire.png");
+            UpsertCurseCard(catalog, "card_curse_demon_fog", "妖雾侵心", "拖进战场时会吞掉当前费用。", "Assets/_Project/Art/AI/Cards/card_curse_demon_fog.png");
+            UpsertCurseCard(catalog, "card_curse_heavy_karma", "因果债契", "拖进战场时会引来一名额外妖兵。", "Assets/_Project/Art/AI/Cards/card_curse_heavy_karma.png");
+
+            Artifact(catalog, "artifact_ten_thousand_banner", "万兵旗", ArtifactRarity.Epic, "建筑牌费用 -1，建筑产兵速度 +35%，但法术牌费用 +1。");
+            Artifact(catalog, "artifact_thunder_fire_box", "雷火符匣", ArtifactRarity.Epic, "法术牌费用 -1，法术伤害额外 +15%，但建筑牌费用 +1。");
+            Artifact(catalog, "artifact_general_platform", "点将台", ArtifactRarity.Rare, "每打出 1 张建筑牌，立刻获得 1 点士气。");
+            Artifact(catalog, "artifact_curse_gourd", "镇煞葫芦", ArtifactRarity.Rare, "打出诅咒牌时不再受罚，改为获得 1 点士气。");
+
             CopyLeveledCardArt(catalog, "card_incense_barracks", "card_incense_barracks");
             CopyLeveledCardArt(catalog, "card_spirit_arrow_altar", "card_spirit_arrow_altar");
             CopyLeveledCardArt(catalog, "card_roadblock", "card_roadblock");
@@ -167,6 +258,13 @@ namespace XTD.Content
             CopyLeveledCardArt(catalog, "card_monkey_hero", "card_monkey_hero");
             CopyLeveledCardArt(catalog, "card_thunder_talisman", "card_thunder_talisman");
             CopyLeveledCardArt(catalog, "card_golden_barrier", "card_golden_barrier");
+            CopyCardArt(catalog, "card_binding_talisman", "card_thunder_talisman");
+            CopyCardArt(catalog, "card_healing_rain", "card_golden_barrier");
+            CopyCardArt(catalog, "card_cloud_banner", "card_star_river_decree");
+            CopyCardArt(catalog, "card_break_formation", "card_rally");
+            CopyCardArt(catalog, "card_poison_gourd", "card_binding_talisman");
+            CopyCardArt(catalog, "card_mountain_seal", "card_thunder_talisman");
+            CopyCardArt(catalog, "card_treasure_talisman", "card_cloud_banner");
 
             Artifact(catalog, "artifact_long_banner", "长旗", ArtifactRarity.Common, "阵位上限 +5。");
             Artifact(catalog, "artifact_field_purse", "战地钱袋", ArtifactRarity.Common, "金币收益 +20%。");
@@ -214,24 +312,89 @@ namespace XTD.Content
 
         public static RunState CreateStartingRun(ContentCatalog catalog)
         {
+            return CreateStartingRun(catalog, HeroClassType.BorderCommander);
+        }
+
+        public static RunState CreateStartingRun(ContentCatalog catalog, HeroClassType heroClass)
+        {
             EnsureCatalogComplete(catalog);
 
             var run = new RunState
             {
-                gold = 25,
-                playerHp = 100f,
-                seed = 12345,
-                lastMessage = "边境指挥官进入第一层。"
+                heroClass = heroClass,
+                gold = StartingGold(heroClass),
+                playerHp = StartingHp(heroClass),
+                seed = UnityEngine.Random.Range(1, int.MaxValue),
+                lastMessage = $"{GameFlowControllerSafeHeroClassName(heroClass)}进入第一层。"
             };
 
-            Add(run, "card_incense_barracks", 2);
-            Add(run, "card_spirit_arrow_altar", 2);
-            Add(run, "card_roadblock", 1);
-            Add(run, "card_heaven_soldier_talisman", 2);
-            Add(run, "card_heaven_general_order", 1);
-            Add(run, "card_fireball", 1);
-            Add(run, "card_rally", 1);
+            AddStartingDeck(run, heroClass);
             return run;
+        }
+
+        private static int StartingGold(HeroClassType heroClass)
+        {
+            return heroClass switch
+            {
+                HeroClassType.SpiritSummoner => 20,
+                HeroClassType.ThunderMage => 32,
+                _ => 25
+            };
+        }
+
+        private static float StartingHp(HeroClassType heroClass)
+        {
+            return heroClass switch
+            {
+                HeroClassType.SpiritSummoner => 108f,
+                HeroClassType.ThunderMage => 92f,
+                _ => 100f
+            };
+        }
+
+        private static void AddStartingDeck(RunState run, HeroClassType heroClass)
+        {
+            switch (heroClass)
+            {
+                case HeroClassType.SpiritSummoner:
+                    Add(run, "card_incense_barracks", 3);
+                    Add(run, "card_spirit_arrow_altar", 2);
+                    Add(run, "card_thunder_drum_tower", 1);
+                    Add(run, "card_roadblock", 1);
+                    Add(run, "card_heaven_soldier_talisman", 1);
+                    Add(run, "card_golden_barrier", 1);
+                    Add(run, "card_rally", 1);
+                    break;
+                case HeroClassType.ThunderMage:
+                    Add(run, "card_incense_barracks", 1);
+                    Add(run, "card_spirit_arrow_altar", 1);
+                    Add(run, "card_roadblock", 1);
+                    Add(run, "card_fireball", 2);
+                    Add(run, "card_thunder_talisman", 2);
+                    Add(run, "card_binding_talisman", 1);
+                    Add(run, "card_mountain_seal", 1);
+                    Add(run, "card_cloud_banner", 1);
+                    break;
+                default:
+                    Add(run, "card_incense_barracks", 2);
+                    Add(run, "card_spirit_arrow_altar", 2);
+                    Add(run, "card_roadblock", 1);
+                    Add(run, "card_heaven_soldier_talisman", 2);
+                    Add(run, "card_heaven_general_order", 1);
+                    Add(run, "card_fireball", 1);
+                    Add(run, "card_rally", 1);
+                    break;
+            }
+        }
+
+        private static string GameFlowControllerSafeHeroClassName(HeroClassType heroClass)
+        {
+            return heroClass switch
+            {
+                HeroClassType.SpiritSummoner => "万灵召使",
+                HeroClassType.ThunderMage => "雷火方士",
+                _ => "边境指挥官"
+            };
         }
 
         private static UnitDefinition Unit(ContentCatalog catalog, string id, string displayName, Faction faction, UnitRole role, float hp, float attack, float interval, float range, float speed, int command, Color tint, string artPath)
@@ -254,8 +417,8 @@ namespace XTD.Content
             unit.range = range;
             unit.moveSpeed = speed;
             unit.commandCost = command;
-            unit.tint = unit.art == null ? tint : Color.white;
             unit.art = LoadSprite(artPath) ?? unit.art;
+            unit.tint = unit.art == null ? tint : Color.white;
             return unit;
         }
 
@@ -292,6 +455,37 @@ namespace XTD.Content
                 card.effects.Clear();
                 card.effects.AddRange(payload.effects);
             }
+        }
+
+        private static void UpsertFixedCard(ContentCatalog catalog, string id, string displayName, CardType type, CardRarity rarity, int level, int cost, CardReleaseRule releaseRule, string description, string artPath, Func<CardPayload> payloadFactory)
+        {
+            var card = catalog.FindCard(id);
+            if (card == null)
+            {
+                card = ScriptableObject.CreateInstance<CardDefinition>();
+                card.name = id;
+                card.id = id;
+                catalog.cards.Add(card);
+            }
+
+            var payload = payloadFactory();
+            card.displayName = displayName;
+            card.type = type;
+            card.rarity = rarity;
+            card.level = level;
+            card.cost = Mathf.Max(0, cost + payload.costOffset);
+            card.releaseRule = releaseRule;
+            card.description = description;
+            card.art = LoadSprite(artPath) ?? card.art;
+            card.unitSpawns.Clear();
+            card.unitSpawns.AddRange(payload.spawns);
+            card.effects.Clear();
+            card.effects.AddRange(payload.effects);
+        }
+
+        private static void UpsertCurseCard(ContentCatalog catalog, string id, string displayName, string description, string artPath)
+        {
+            UpsertFixedCard(catalog, id, displayName, CardType.Curse, CardRarity.Common, 1, 0, CardReleaseRule.None, description, artPath, () => new CardPayload());
         }
 
         public static string LevelId(string baseId, int level)
@@ -370,6 +564,7 @@ namespace XTD.Content
             artifact.rarity = rarity;
             artifact.description = description;
             artifact.trigger = ArtifactTrigger.Passive;
+            artifact.icon = LoadSprite($"Assets/_Project/Art/AI/UI/Artifacts/{id}.png") ?? artifact.icon;
         }
 
         private static void Encounter(ContentCatalog catalog, string id, string displayName, MapNodeType nodeType, float playerHp, float enemyHp, float interval, int rewardGold, UnitDefinition coreEnemy, params EnemySpawnEntry[] spawns)
@@ -415,9 +610,91 @@ namespace XTD.Content
             }
         }
 
+        private static void CopyCardArt(ContentCatalog catalog, string targetId, string sourceId)
+        {
+            var target = catalog.FindCard(targetId);
+            var source = catalog.FindCard(sourceId);
+            if (target != null && target.art == null && source != null)
+            {
+                target.art = source.art;
+            }
+        }
+
         private static Sprite LoadSprite(string path)
         {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return null;
+            }
+
+            if (LoadedSprites.TryGetValue(path, out var cached))
+            {
+                return cached;
+            }
+
+            Sprite sprite = null;
+#if UNITY_EDITOR
+            sprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>(path);
+            if (sprite != null)
+            {
+                LoadedSprites[path] = sprite;
+                return sprite;
+            }
+#endif
+
+            var resourcePath = ToResourcePath(path);
+            if (!string.IsNullOrWhiteSpace(resourcePath))
+            {
+                sprite = Resources.Load<Sprite>(resourcePath);
+                if (sprite == null)
+                {
+                    var texture = Resources.Load<Texture2D>(resourcePath);
+                    if (texture != null)
+                    {
+                        sprite = Sprite.Create(
+                            texture,
+                            new Rect(0f, 0f, texture.width, texture.height),
+                            new Vector2(0.5f, 0.5f),
+                            PixelsPerUnitForResource(resourcePath));
+                        sprite.name = texture.name;
+                    }
+                }
+            }
+
+            if (sprite != null)
+            {
+                LoadedSprites[path] = sprite;
+            }
+
+            return sprite;
+        }
+
+        private static string ToResourcePath(string path)
+        {
+            var normalized = path.Replace("\\", "/");
+            if (normalized.StartsWith(ProjectAiArtPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                return RuntimeAiArtPrefix + RemoveExtension(normalized.Substring(ProjectAiArtPrefix.Length));
+            }
+
+            if (normalized.StartsWith(ResourcesAssetPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                return RemoveExtension(normalized.Substring(ResourcesAssetPrefix.Length));
+            }
+
             return null;
+        }
+
+        private static string RemoveExtension(string path)
+        {
+            var slash = path.LastIndexOf('/');
+            var dot = path.LastIndexOf('.');
+            return dot > slash ? path.Substring(0, dot) : path;
+        }
+
+        private static float PixelsPerUnitForResource(string resourcePath)
+        {
+            return resourcePath.Contains("/Backgrounds/", StringComparison.OrdinalIgnoreCase) ? 128f : 256f;
         }
 
         private sealed class CardPayload

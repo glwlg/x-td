@@ -1,0 +1,287 @@
+OPENAI_API_KEY is set.
+[job 1/95] starting
+[job 2/95] starting
+[job 1/95] completed in 55.0s
+[job 3/95] starting
+[job 2/95] completed in 71.2s
+[job 4/95] starting
+[job 3/95] completed in 61.9s
+[job 5/95] starting
+[job 4/95] completed in 76.7s
+[job 6/95] starting
+[job 5/95] completed in 54.7s
+[job 7/95] starting
+[job 6/95] completed in 62.2s
+[job 8/95] starting
+[job 7/95] completed in 66.4s
+[job 9/95] starting
+[job 8/95] completed in 67.7s
+[job 10/95] starting
+[job 9/95] completed in 56.7s
+[job 11/95] starting
+[job 10/95] completed in 64.6s
+[job 12/95] starting
+[job 11/95] completed in 61.2s
+[job 13/95] starting
+[job 13/95] completed in 43.8s
+[job 14/95] starting
+[job 12/95] completed in 82.8s
+[job 15/95] starting
+[job 14/95] completed in 74.1s
+[job 16/95] starting
+[job 15/95] completed in 66.5s
+[job 17/95] starting
+[job 16/95] completed in 64.0s
+[job 18/95] starting
+[job 17/95] completed in 57.3s
+[job 19/95] starting
+[job 18/95] completed in 62.0s
+[job 20/95] starting
+[job 19/95] completed in 62.7s
+[job 21/95] starting
+[job 20/95] completed in 65.3s
+[job 22/95] starting
+[job 21/95] completed in 66.0s
+[job 23/95] starting
+[job 23/95] completed in 47.9s
+[job 24/95] starting
+[job 22/95] completed in 62.3s
+[job 25/95] starting
+[job 25/95] completed in 41.3s
+[job 26/95] starting
+[job 24/95] completed in 50.8s
+[job 27/95] starting
+[job 26/95] completed in 54.1s
+[job 28/95] starting
+[job 27/95] completed in 55.1s
+[job 29/95] starting
+[job 28/95] completed in 49.6s
+[job 30/95] starting
+[job 29/95] completed in 49.7s
+[job 31/95] starting
+[job 30/95] completed in 38.1s
+[job 32/95] starting
+[job 31/95] completed in 53.5s
+[job 33/95] starting
+[job 33/95] completed in 55.4s
+[job 34/95] starting
+[job 32/95] completed in 115.1s
+[job 35/95] starting
+[job 34/95] completed in 53.3s
+[job 36/95] starting
+[job 35/95] completed in 55.3s
+[job 37/95] starting
+[job 36/95] completed in 57.1s
+[job 38/95] starting
+[job 38/95] completed in 48.3s
+[job 39/95] starting
+[job 39/95] completed in 54.3s
+[job 40/95] starting
+[job 37/95] completed in 175.7s
+[job 41/95] starting
+[job 40/95] completed in 54.7s
+[job 42/95] starting
+[job 41/95] completed in 50.2s
+[job 43/95] starting
+[job 42/95] completed in 53.0s
+[job 44/95] starting
+[job 43/95] completed in 50.8s
+[job 45/95] starting
+[job 44/95] completed in 53.4s
+[job 46/95] starting
+[job 45/95] completed in 49.3s
+[job 47/95] starting
+[job 46/95] completed in 62.8s
+[job 48/95] starting
+[job 48/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 48/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 48/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252585, 'reset_time': '70h9m45s'}}
+[job 49/95] starting
+[job 49/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 49/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 49/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252575, 'reset_time': '70h9m35s'}}
+[job 50/95] starting
+[job 50/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 50/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 50/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252565, 'reset_time': '70h9m25s'}}
+[job 51/95] starting
+[job 51/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 51/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 51/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252556, 'reset_time': '70h9m15s'}}
+[job 52/95] starting
+[job 52/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 52/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 47/95] completed in 67.3s
+[job 53/95] starting
+[job 53/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 53/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 52/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252546, 'reset_time': '70h9m5s'}}
+[job 54/95] starting
+[job 54/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 54/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 53/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252540, 'reset_time': '70h9m0s'}}
+[job 55/95] starting
+[job 55/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 55/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 54/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252536, 'reset_time': '70h8m55s'}}
+[job 56/95] starting
+[job 56/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 56/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 55/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252530, 'reset_time': '70h8m50s'}}
+[job 57/95] starting
+[job 57/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 56/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252526, 'reset_time': '70h8m45s'}}
+[job 58/95] starting
+[job 57/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 58/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 58/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 57/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252520, 'reset_time': '70h8m40s'}}
+[job 59/95] starting
+[job 59/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 58/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252516, 'reset_time': '70h8m35s'}}
+[job 60/95] starting
+[job 59/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 60/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 60/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 59/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252510, 'reset_time': '70h8m30s'}}
+[job 61/95] starting
+[job 61/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 60/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252506, 'reset_time': '70h8m25s'}}
+[job 62/95] starting
+[job 61/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 62/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 62/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 61/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252500, 'reset_time': '70h8m20s'}}
+[job 63/95] starting
+[job 63/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 62/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252495, 'reset_time': '70h8m15s'}}
+[job 64/95] starting
+[job 63/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 64/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 64/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 63/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252490, 'reset_time': '70h8m10s'}}
+[job 65/95] starting
+[job 65/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 65/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 64/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252485, 'reset_time': '70h8m5s'}}
+[job 66/95] starting
+[job 66/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 66/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 65/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252480, 'reset_time': '70h8m0s'}}
+[job 67/95] starting
+[job 67/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 67/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 66/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252475, 'reset_time': '70h7m55s'}}
+[job 68/95] starting
+[job 68/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 68/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 67/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252470, 'reset_time': '70h7m49s'}}
+[job 69/95] starting
+[job 69/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 69/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 68/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252465, 'reset_time': '70h7m45s'}}
+[job 70/95] starting
+[job 70/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 70/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 69/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252460, 'reset_time': '70h7m40s'}}
+[job 71/95] starting
+[job 71/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 71/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 70/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252455, 'reset_time': '70h7m34s'}}
+[job 72/95] starting
+[job 72/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 72/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 71/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252450, 'reset_time': '70h7m30s'}}
+[job 73/95] starting
+[job 73/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 73/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 72/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252445, 'reset_time': '70h7m24s'}}
+[job 74/95] starting
+[job 74/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 74/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 73/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252440, 'reset_time': '70h7m20s'}}
+[job 75/95] starting
+[job 75/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 75/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 74/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252435, 'reset_time': '70h7m14s'}}
+[job 76/95] starting
+[job 76/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 76/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 75/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252430, 'reset_time': '70h7m10s'}}
+[job 77/95] starting
+[job 77/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 77/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 76/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252425, 'reset_time': '70h7m4s'}}
+[job 78/95] starting
+[job 78/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 78/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 77/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252420, 'reset_time': '70h7m0s'}}
+[job 79/95] starting
+[job 79/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 79/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 78/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252415, 'reset_time': '70h6m55s'}}
+[job 80/95] starting
+[job 80/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 80/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 79/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252410, 'reset_time': '70h6m50s'}}
+[job 81/95] starting
+[job 81/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 81/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 80/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252405, 'reset_time': '70h6m45s'}}
+[job 82/95] starting
+[job 82/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 82/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 81/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252400, 'reset_time': '70h6m40s'}}
+[job 83/95] starting
+[job 83/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 83/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 82/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252395, 'reset_time': '70h6m35s'}}
+[job 84/95] starting
+[job 84/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 84/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 83/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252390, 'reset_time': '70h6m29s'}}
+[job 85/95] starting
+[job 85/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 85/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 84/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252385, 'reset_time': '70h6m25s'}}
+[job 86/95] starting
+[job 86/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 86/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 85/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252380, 'reset_time': '70h6m19s'}}
+[job 87/95] starting
+[job 87/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 87/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 86/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252375, 'reset_time': '70h6m15s'}}
+[job 88/95] starting
+[job 88/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 88/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 87/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252370, 'reset_time': '70h6m9s'}}
+[job 89/95] starting
+[job 89/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 89/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 88/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252365, 'reset_time': '70h6m5s'}}
+[job 90/95] starting
+[job 90/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 90/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 89/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252360, 'reset_time': '70h5m59s'}}
+[job 91/95] starting
+[job 91/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 91/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 90/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252355, 'reset_time': '70h5m54s'}}
+[job 92/95] starting
+[job 92/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 92/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 91/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252350, 'reset_time': '70h5m49s'}}
+[job 93/95] starting
+[job 93/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 93/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 92/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252345, 'reset_time': '70h5m44s'}}
+[job 94/95] starting
+[job 94/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 94/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 93/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252340, 'reset_time': '70h5m39s'}}
+[job 95/95] starting
+[job 95/95] attempt 1/3 failed (RateLimitError); retrying in 2.0s
+[job 94/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252335, 'reset_time': '70h5m35s'}}
+[job 95/95] attempt 2/3 failed (RateLimitError); retrying in 4.0s
+[job 95/95] failed: Error code: 429 - {'error': {'code': 'model_cooldown', 'message': 'All credentials for model gpt-5.4-mini are cooling down via provider codex', 'model': 'gpt-5.4-mini', 'provider': 'codex', 'reset_seconds': 252330, 'reset_time': '70h5m29s'}}

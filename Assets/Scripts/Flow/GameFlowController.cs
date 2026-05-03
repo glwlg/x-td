@@ -23,6 +23,12 @@ namespace XTD.Flow
         private const string MainMenuScene = "MainMenu";
         private const string BattleScene = "BattlePrototype";
         private const int OpportunityTemplateCount = 6;
+        private const int MysteryTemplateCount = 3;
+        private const int ArtifactRefreshCost = 10;
+        private const int ShopBaseRerollCost = 8;
+        private const int ShopBaseRemoveCost = 58;
+        private const int MinimumDeckSizeAfterRemove = 6;
+        private const int MaxRunLogEntries = 42;
 
         private readonly MapGenerationService mapGeneration = new();
         private readonly List<List<MapNodeRuntime>> mapRows = new();
@@ -38,10 +44,17 @@ namespace XTD.Flow
         public IReadOnlyList<List<MapNodeRuntime>> MapRows => mapRows;
         public PermanentProgressData PermanentProgress => permanentProgress ??= PermanentProgressStore.Load();
         public IReadOnlyList<string> PermanentArtifactIds => PermanentProgress.permanentArtifactIds;
+        public IReadOnlyList<string> RunEventLog => CurrentRun != null ? CurrentRun.eventLog : Array.Empty<string>();
         public bool HasActiveRun => CurrentRun != null && !CurrentRun.isComplete && !CurrentRun.isDefeated;
         public bool HasPendingNode => hasPendingNode;
         public bool HasPendingCardReward => CurrentRun != null && CurrentRun.pendingCardRewardPickCount > 0 && CurrentRun.pendingCardRewardIds.Count > 0;
         public int PendingCardRewardPickCount => CurrentRun != null ? CurrentRun.pendingCardRewardPickCount : 0;
+        public int PendingCardRewardSkipGold => CurrentRun != null ? CurrentRun.pendingCardRewardSkipGold : 0;
+        public int ShopRerollCost => CurrentRun != null ? DiscountedShopUtilityCost(ShopBaseRerollCost + CurrentRun.shopOfferRerollCount * 5) : ShopBaseRerollCost;
+        public int ShopRemoveCost => CurrentRun != null ? DiscountedShopUtilityCost(ShopBaseRemoveCost) : ShopBaseRemoveCost;
+        public bool CanRemoveCardAtShop => CurrentRun != null && !CurrentRun.shopRemoveUsed && CurrentRun.deckCardIds.Count > MinimumDeckSizeAfterRemove;
+        public int ArtifactRefreshesRemaining => CurrentRun != null ? CurrentRun.artifactRefreshesRemaining : 0;
+        public int ArtifactRerollCost => ArtifactRefreshCost;
         public MapNodeRuntime PendingNode => pendingNode;
 
         private void Awake()
@@ -84,15 +97,24 @@ namespace XTD.Flow
 
         public void StartNewRun(ContentCatalog catalog)
         {
+            StartNewRun(catalog, HeroClassType.BorderCommander);
+        }
+
+        public void StartNewRun(ContentCatalog catalog, HeroClassType heroClass)
+        {
             ConfigureCatalog(catalog);
-            CurrentRun = DemoContentFactory.CreateStartingRun(Catalog);
+            CurrentRun = DemoContentFactory.CreateStartingRun(Catalog, heroClass);
+            AssignFloorAffixes(CurrentRun);
             ApplyPermanentStartBonuses(CurrentRun);
+            AppendRunLog(CurrentRun.lastMessage);
             mapRows.Clear();
             mapRows.AddRange(mapGeneration.Generate(CurrentRun.seed));
             SetAvailableNodesForCurrentRow();
             ClearPendingNode();
             LoadMainMenu();
         }
+
+        public HeroClassType CurrentHeroClass => CurrentRun != null ? CurrentRun.heroClass : HeroClassType.BorderCommander;
 
         public void LoadMainMenu()
         {
@@ -144,18 +166,32 @@ namespace XTD.Flow
 
             if (node.NodeType == MapNodeType.Mystery)
             {
-                ResolveMysteryNode(node);
+                CurrentRun.lastMessage = "进入神秘房间，请选择探查方式。";
+                AppendRunLog(CurrentRun.lastMessage);
                 return;
             }
 
             if (IsBattleNode(node.NodeType))
             {
                 pendingEncounterId = ResolveEncounterId(node);
+                AppendRunLog($"进入{NodeTypeName(node.NodeType)}：迷宫 {node.Floor} · 房间 {node.Row}/10。");
                 SceneManager.LoadScene(BattleScene);
                 return;
             }
 
+            if (node.NodeType == MapNodeType.Artifact)
+            {
+                CurrentRun.artifactRefreshesRemaining = 2;
+                CurrentRun.artifactOfferRerollCount = 0;
+            }
+            else if (node.NodeType == MapNodeType.Shop)
+            {
+                ResetShopState();
+                RefillShopOffers();
+            }
+
             CurrentRun.lastMessage = $"进入{NodeTypeName(node.NodeType)}。";
+            AppendRunLog(CurrentRun.lastMessage);
         }
 
         public EncounterDefinition PendingEncounterOrDefault(ContentCatalog fallbackCatalog)
@@ -183,6 +219,7 @@ namespace XTD.Flow
                 CurrentRun.playerHp = 0f;
                 CurrentRun.isDefeated = true;
                 CurrentRun.lastMessage = "本次探索失败，已返回营地。";
+                AppendRunLog(CurrentRun.lastMessage);
                 RecordRunFinished(false, CurrentRun.heroExperience);
                 ClearPendingNode();
                 LoadMainMenu();
@@ -198,6 +235,7 @@ namespace XTD.Flow
             if (HasPendingCardReward)
             {
                 CurrentRun.lastMessage = rewardText + " 请选择卡牌奖励。";
+                AppendRunLog(rewardText);
                 LoadMainMenu();
                 return;
             }
@@ -205,6 +243,7 @@ namespace XTD.Flow
             AdvanceAfterResolvedNode(pendingNode);
             ClearPendingNode();
             CurrentRun.lastMessage = rewardText;
+            AppendRunLog(rewardText);
             LoadMainMenu();
         }
 
@@ -213,6 +252,15 @@ namespace XTD.Flow
             if (card == null || CurrentRun == null)
             {
                 return false;
+            }
+
+            if (hasPendingNode && pendingNode != null && pendingNode.NodeType == MapNodeType.Shop)
+            {
+                if (!CurrentRun.shopOfferCardIds.Contains(card.id) || CurrentRun.shopBoughtCardIds.Contains(card.id))
+                {
+                    CurrentRun.lastMessage = "这张牌已经不在当前货架上。";
+                    return false;
+                }
             }
 
             var price = CardBuyPrice(card);
@@ -224,7 +272,13 @@ namespace XTD.Flow
 
             CurrentRun.gold -= price;
             CurrentRun.deckCardIds.Add(card.id);
+            if (hasPendingNode && pendingNode != null && pendingNode.NodeType == MapNodeType.Shop)
+            {
+                CurrentRun.shopBoughtCardIds.Add(card.id);
+            }
+
             CurrentRun.lastMessage = $"购买了 {card.displayName}，花费 {price} 金币。";
+            AppendRunLog(CurrentRun.lastMessage);
             return true;
         }
 
@@ -244,11 +298,13 @@ namespace XTD.Flow
             var price = Mathf.Max(1, CardBuyPrice(card) / 2);
             CurrentRun.gold += price;
             CurrentRun.lastMessage = $"出售了 {card.displayName}，获得 {price} 金币。";
+            AppendRunLog(CurrentRun.lastMessage);
             return true;
         }
 
         public void LeaveShop()
         {
+            ResetShopState();
             ResolvePendingNonBattle("离开商店。");
         }
 
@@ -292,14 +348,24 @@ namespace XTD.Flow
 
         public void ResolveOpportunity()
         {
+            var options = GenerateOpportunityOptions();
+            if (options.Count == 0)
+            {
+                return;
+            }
+
+            ChooseOpportunity(options[0].templateIndex);
+        }
+
+        public void ChooseOpportunity(int templateIndex)
+        {
             if (CurrentRun == null)
             {
                 return;
             }
 
             var random = RandomForCurrentNode(29);
-            var preview = GenerateOpportunityPreview();
-            var message = ResolveOpportunityTemplate(preview.templateIndex, random);
+            var message = ResolveOpportunityTemplate(templateIndex, random);
 
             if (HasPendingCardReward)
             {
@@ -308,6 +374,19 @@ namespace XTD.Flow
             }
 
             ResolvePendingNonBattle(message);
+        }
+
+        public IReadOnlyList<OpportunityEventPreview> GenerateOpportunityOptions()
+        {
+            if (CurrentRun == null)
+            {
+                return Array.Empty<OpportunityEventPreview>();
+            }
+
+            var random = RandomForCurrentNode(29);
+            return RandomTemplateIndices(random, OpportunityTemplateCount, 3)
+                .Select(OpportunityPreview)
+                .ToList();
         }
 
         public OpportunityEventPreview GenerateOpportunityPreview()
@@ -329,6 +408,44 @@ namespace XTD.Flow
             return OpportunityPreview(templateIndex);
         }
 
+        public IReadOnlyList<OpportunityEventPreview> GenerateMysteryOptions()
+        {
+            if (CurrentRun == null)
+            {
+                return Array.Empty<OpportunityEventPreview>();
+            }
+
+            return Enumerable.Range(0, MysteryTemplateCount)
+                .Select(MysteryPreview)
+                .ToList();
+        }
+
+        public void ChooseMystery(int templateIndex)
+        {
+            if (CurrentRun == null || !hasPendingNode || pendingNode.NodeType != MapNodeType.Mystery)
+            {
+                return;
+            }
+
+            var random = RandomForCurrentNode(61 + templateIndex * 13);
+            var message = ResolveMysteryTemplate(templateIndex, random);
+            if (!string.IsNullOrWhiteSpace(pendingEncounterId))
+            {
+                return;
+            }
+
+            if (HasPendingCardReward)
+            {
+                CurrentRun.lastMessage = message + " 请先选择卡牌奖励。";
+                return;
+            }
+
+            if (hasPendingNode)
+            {
+                ResolvePendingNonBattle(message);
+            }
+        }
+
         public void ChooseArtifact(ArtifactDefinition artifact)
         {
             if (artifact == null || CurrentRun == null)
@@ -341,6 +458,8 @@ namespace XTD.Flow
                 CurrentRun.artifactIds.Add(artifact.id);
             }
 
+            CurrentRun.artifactRefreshesRemaining = 0;
+            CurrentRun.artifactOfferRerollCount = 0;
             ResolvePendingNonBattle($"获得神器：{artifact.displayName}。");
         }
 
@@ -371,6 +490,7 @@ namespace XTD.Flow
             if (CurrentRun.pendingCardRewardPickCount > 0 && CurrentRun.pendingCardRewardIds.Count > 0)
             {
                 CurrentRun.lastMessage = $"获得 {card.displayName}。还可以选择 {CurrentRun.pendingCardRewardPickCount} 张奖励卡。";
+                AppendRunLog($"获得卡牌：{card.displayName}。");
                 return;
             }
 
@@ -387,21 +507,144 @@ namespace XTD.Flow
             FinishPendingCardReward("放弃剩余卡牌奖励。");
         }
 
+        public void SkipCardRewardForGold()
+        {
+            if (!HasPendingCardReward)
+            {
+                return;
+            }
+
+            var skipGold = CurrentRun.pendingCardRewardSkipGold;
+            if (skipGold <= 0)
+            {
+                SkipCardReward();
+                return;
+            }
+
+            GrantGold(skipGold);
+            FinishPendingCardReward($"放弃剩余卡牌奖励，换得 {Mathf.CeilToInt(skipGold * GoldMultiplier())} 金币。");
+        }
+
         public IReadOnlyList<CardDefinition> GenerateShopCards()
         {
-            var random = RandomForCurrentNode(41);
-            return RandomCards(random, 5, includeUpgraded: true);
+            if (CurrentRun == null)
+            {
+                return Array.Empty<CardDefinition>();
+            }
+
+            if (CurrentRun.shopOfferCardIds.Count == 0)
+            {
+                RefillShopOffers();
+            }
+
+            return CurrentRun.shopOfferCardIds
+                .Where(id => !CurrentRun.shopBoughtCardIds.Contains(id))
+                .Select(id => Catalog.FindCard(id))
+                .Where(card => card != null)
+                .ToList();
+        }
+
+        public bool RerollShopCards()
+        {
+            if (CurrentRun == null)
+            {
+                return false;
+            }
+
+            var cost = ShopRerollCost;
+            if (CurrentRun.gold < cost)
+            {
+                CurrentRun.lastMessage = "金币不足，无法刷新商店货架。";
+                return false;
+            }
+
+            CurrentRun.gold -= cost;
+            CurrentRun.shopOfferRerollCount++;
+            CurrentRun.shopOfferCardIds.Clear();
+            CurrentRun.shopBoughtCardIds.Clear();
+            RefillShopOffers();
+            CurrentRun.lastMessage = $"花费 {cost} 金币刷新商店货架。";
+            AppendRunLog(CurrentRun.lastMessage);
+            return true;
+        }
+
+        public bool RemoveCardAtShop(string cardId)
+        {
+            if (CurrentRun == null || string.IsNullOrWhiteSpace(cardId))
+            {
+                return false;
+            }
+
+            if (CurrentRun.shopRemoveUsed)
+            {
+                CurrentRun.lastMessage = "本次商店已经净化过一张牌。";
+                return false;
+            }
+
+            if (CurrentRun.deckCardIds.Count <= MinimumDeckSizeAfterRemove)
+            {
+                CurrentRun.lastMessage = $"卡组至少保留 {MinimumDeckSizeAfterRemove} 张牌。";
+                return false;
+            }
+
+            var card = Catalog.FindCard(cardId);
+            if (card == null || !CurrentRun.deckCardIds.Contains(cardId))
+            {
+                CurrentRun.lastMessage = "没有找到要净化的卡牌。";
+                return false;
+            }
+
+            var cost = ShopRemoveCost;
+            if (CurrentRun.gold < cost)
+            {
+                CurrentRun.lastMessage = "金币不足，无法净化卡牌。";
+                return false;
+            }
+
+            CurrentRun.gold -= cost;
+            CurrentRun.deckCardIds.Remove(cardId);
+            CurrentRun.shopRemoveUsed = true;
+            CurrentRun.lastMessage = $"净化移除了 {card.displayName}，花费 {cost} 金币。";
+            AppendRunLog(CurrentRun.lastMessage);
+            return true;
         }
 
         public IReadOnlyList<ArtifactDefinition> GenerateArtifactChoices()
         {
-            var random = RandomForCurrentNode(53);
+            var random = RandomForCurrentNode(53 + (CurrentRun != null ? CurrentRun.artifactOfferRerollCount * 101 : 0));
             var candidates = Catalog.artifacts
                 .Where(artifact => artifact != null && artifact.id != "artifact_permanent_relic" && !CurrentRun.artifactIds.Contains(artifact.id))
                 .OrderBy(_ => random.Next())
                 .ToList();
             var count = HasArtifact("artifact_artifact_eye") ? 4 : 3;
             return candidates.Take(count).ToList();
+        }
+
+        public bool RerollArtifactChoices()
+        {
+            if (CurrentRun == null)
+            {
+                return false;
+            }
+
+            if (CurrentRun.artifactRefreshesRemaining <= 0)
+            {
+                CurrentRun.lastMessage = "神器刷新次数已用完。";
+                return false;
+            }
+
+            if (CurrentRun.gold < ArtifactRefreshCost)
+            {
+                CurrentRun.lastMessage = "金币不足，无法刷新神器。";
+                return false;
+            }
+
+            CurrentRun.gold -= ArtifactRefreshCost;
+            CurrentRun.artifactRefreshesRemaining--;
+            CurrentRun.artifactOfferRerollCount++;
+            CurrentRun.lastMessage = $"消耗 {ArtifactRefreshCost} 金币刷新神器。";
+            AppendRunLog(CurrentRun.lastMessage);
+            return true;
         }
 
         public IReadOnlyList<IGrouping<string, string>> UpgradableCardGroups()
@@ -437,23 +680,67 @@ namespace XTD.Flow
             return Mathf.Max(1, price);
         }
 
+        private void RefillShopOffers()
+        {
+            if (CurrentRun == null)
+            {
+                return;
+            }
+
+            var random = RandomForCurrentNode(41 + CurrentRun.shopOfferRerollCount * 113);
+            CurrentRun.shopOfferCardIds.Clear();
+            CurrentRun.shopOfferCardIds.AddRange(RandomCards(random, 5, includeUpgraded: true)
+                .Where(card => card != null)
+                .Select(card => card.id));
+        }
+
+        private void ResetShopState()
+        {
+            if (CurrentRun == null)
+            {
+                return;
+            }
+
+            CurrentRun.shopOfferCardIds.Clear();
+            CurrentRun.shopBoughtCardIds.Clear();
+            CurrentRun.shopOfferRerollCount = 0;
+            CurrentRun.shopRemoveUsed = false;
+        }
+
+        private int DiscountedShopUtilityCost(int baseCost)
+        {
+            var cost = Mathf.Max(1, baseCost);
+            if (HasArtifact("artifact_market_token"))
+            {
+                cost = Mathf.CeilToInt(cost * 0.8f);
+            }
+
+            return Mathf.Max(1, cost);
+        }
+
         public int PlayerExtraCommand()
         {
             var value = 0;
+            if (CurrentHeroClass == HeroClassType.SpiritSummoner) value += 6;
+            if (CurrentHeroClass == HeroClassType.ThunderMage) value -= 2;
             if (HasArtifact("artifact_long_banner")) value += 5;
             if (HasArtifact("artifact_command_seal")) value += 3;
             if (HasArtifact("artifact_vajra")) value += 8;
-            return value;
+            return Mathf.Max(-8, value);
         }
 
         public int ExtraMaxMana()
         {
-            return HasArtifact("artifact_heaven_seal") ? 2 : 0;
+            var value = CurrentHeroClass == HeroClassType.ThunderMage ? 2 : 0;
+            if (HasArtifact("artifact_heaven_seal")) value += 2;
+            return value;
         }
 
         public float ExtraStartingMana()
         {
             var value = 0f;
+            if (CurrentHeroClass == HeroClassType.ThunderMage) value += 2f;
+            if (CurrentHeroClass == HeroClassType.BorderCommander) value += 0.5f;
             if (HasArtifact("artifact_heaven_seal")) value += 1f;
             if (HasArtifact("artifact_star_sand")) value += 1f;
             return value;
@@ -461,17 +748,31 @@ namespace XTD.Flow
 
         public int StartingHandBonus()
         {
-            return HasArtifact("artifact_command_seal") ? 1 : 0;
+            var value = CurrentHeroClass == HeroClassType.ThunderMage ? 1 : 0;
+            if (HasArtifact("artifact_command_seal")) value += 1;
+            return value;
         }
 
         public int MoraleThreshold()
         {
-            return HasArtifact("artifact_war_drum") ? 4 : 5;
+            var threshold = CurrentHeroClass switch
+            {
+                HeroClassType.SpiritSummoner => 4,
+                HeroClassType.ThunderMage => 6,
+                _ => 5
+            };
+            if (HasArtifact("artifact_war_drum")) threshold--;
+            return Mathf.Max(3, threshold);
         }
 
         public float SpellDamageMultiplier()
         {
-            return HasArtifact("artifact_fire_pearl") ? 1.25f : 1f;
+            var multiplier = 1f;
+            if (CurrentHeroClass == HeroClassType.ThunderMage) multiplier += 0.22f;
+            if (HasArtifact("artifact_fire_pearl")) multiplier += 0.25f;
+            if (HasArtifact("artifact_thunder_fire_box")) multiplier += 0.15f;
+            if (CurrentFloorAffix() == FloorAffixType.ThunderTribulation) multiplier += 0.08f;
+            return multiplier;
         }
 
         public float UnitMoveSpeedMultiplier()
@@ -482,6 +783,16 @@ namespace XTD.Flow
         public float UnitAttackMultiplier(UnitDefinition unit)
         {
             var multiplier = 1f;
+            if (CurrentHeroClass == HeroClassType.BorderCommander && unit != null && (unit.role == UnitRole.Soldier || unit.role == UnitRole.Elite))
+            {
+                multiplier += 0.08f;
+            }
+
+            if (CurrentHeroClass == HeroClassType.SpiritSummoner && unit != null && unit.role == UnitRole.Soldier)
+            {
+                multiplier += 0.06f;
+            }
+
             if (HasArtifact("artifact_dragon_bone") && unit != null && unit.role == UnitRole.Soldier)
             {
                 multiplier += 0.12f;
@@ -504,6 +815,18 @@ namespace XTD.Flow
 
             CurrentRun.gold += Mathf.Max(1, amount);
             CurrentRun.lastMessage = $"调试：金币 +{amount}。";
+        }
+
+        public void GainGoldDuringBattle(int amount)
+        {
+            if (CurrentRun == null)
+            {
+                return;
+            }
+
+            GrantGold(Mathf.Max(1, amount));
+            CurrentRun.lastMessage = $"战斗中获得 {Mathf.CeilToInt(Mathf.Max(1, amount) * GoldMultiplier())} 金币。";
+            AppendRunLog(CurrentRun.lastMessage);
         }
 
         public void DebugOpenCardReward()
@@ -541,9 +864,89 @@ namespace XTD.Flow
             LoadMainMenu();
         }
 
+        public void DebugJumpToBoss()
+        {
+            DebugJumpTo(10, "调试：已跳到本层首领前。");
+        }
+
+        public void DebugJumpToFinalBoss()
+        {
+            if (CurrentRun == null)
+            {
+                return;
+            }
+
+            EnsureMap();
+            ClearPendingNode();
+            ClearPendingCardReward();
+            CurrentRun.floor = 3;
+            CurrentRun.row = 10;
+            SetAvailableNodesForCurrentRow();
+            CurrentRun.lastMessage = "调试：已跳到最终首领前。";
+        }
+
+        public void DebugGrantRandomArtifact()
+        {
+            if (CurrentRun == null)
+            {
+                return;
+            }
+
+            var random = RandomForCurrentNode(191 + CurrentRun.artifactIds.Count * 17);
+            if (TryGrantRandomArtifact(random, out var artifactName))
+            {
+                CurrentRun.lastMessage = $"调试：获得神器 {artifactName}。";
+            }
+            else
+            {
+                CurrentRun.lastMessage = "调试：没有可获得的新神器。";
+            }
+        }
+
+        public void DebugHealToFull()
+        {
+            if (CurrentRun == null)
+            {
+                return;
+            }
+
+            CurrentRun.playerHp = PlayerMaxHpForRun();
+            CurrentRun.lastMessage = "调试：生命已回满。";
+        }
+
+        public int PermanentHeroLevel()
+        {
+            return HeroLevelForExperience(PermanentProgress.totalHeroExperience);
+        }
+
+        public int CurrentRunPreviewHeroLevel()
+        {
+            var runExperience = CurrentRun != null ? CurrentRun.heroExperience : 0;
+            return HeroLevelForExperience(PermanentProgress.totalHeroExperience + runExperience);
+        }
+
+        public int ExperienceForNextHeroLevel()
+        {
+            var level = CurrentRunPreviewHeroLevel();
+            return ExperienceRequiredForLevel(level + 1);
+        }
+
         public float PlayerMaxHpForRun()
         {
             var maxHp = 100f;
+            maxHp += CurrentHeroClass switch
+            {
+                HeroClassType.SpiritSummoner => 10f,
+                HeroClassType.ThunderMage => -8f,
+                _ => 0f
+            };
+            maxHp += Mathf.Max(0, PermanentHeroLevel() - 1) * 2f;
+            if (PermanentProgress.permanentArtifactIds.Contains("artifact_permanent_relic") ||
+                (CurrentRun != null && CurrentRun.permanentArtifactIds.Contains("artifact_permanent_relic")))
+            {
+                maxHp += 5f;
+            }
+
             if (HasArtifact("artifact_black_tortoise")) maxHp += 20f;
             if (HasArtifact("artifact_vajra")) maxHp += 35f;
             return maxHp;
@@ -552,6 +955,138 @@ namespace XTD.Flow
         public float BattleStartHpBonus()
         {
             return HasArtifact("artifact_jade_bottle") ? 12f : 0f;
+        }
+
+        public FloorAffixType CurrentFloorAffix()
+        {
+            if (CurrentRun == null || CurrentRun.floorAffixes.Count == 0)
+            {
+                return FloorAffixType.None;
+            }
+
+            var index = Mathf.Clamp(CurrentRun.floor - 1, 0, CurrentRun.floorAffixes.Count - 1);
+            return CurrentRun.floorAffixes[index];
+        }
+
+        public string CurrentFloorAffixName()
+        {
+            return FloorAffixName(CurrentFloorAffix());
+        }
+
+        public string CurrentFloorAffixDescription()
+        {
+            return FloorAffixDescription(CurrentFloorAffix());
+        }
+
+        public int CardCostModifier(CardDefinition card)
+        {
+            if (card == null || card.type == CardType.Curse)
+            {
+                return 0;
+            }
+
+            var modifier = 0;
+            if (CurrentHeroClass == HeroClassType.SpiritSummoner)
+            {
+                if (card.type == CardType.Structure) modifier -= 1;
+                if (card.type == CardType.Spell) modifier += 1;
+            }
+
+            if (CurrentHeroClass == HeroClassType.ThunderMage)
+            {
+                if (card.type == CardType.Spell || card.type == CardType.Debuff) modifier -= 1;
+                if (card.type == CardType.Structure) modifier += 1;
+            }
+
+            if (HasArtifact("artifact_ten_thousand_banner"))
+            {
+                if (card.type == CardType.Structure) modifier -= 1;
+                if (card.type == CardType.Spell) modifier += 1;
+            }
+
+            if (HasArtifact("artifact_thunder_fire_box"))
+            {
+                if (card.type == CardType.Spell) modifier -= 1;
+                if (card.type == CardType.Structure) modifier += 1;
+            }
+
+            if (CurrentFloorAffix() == FloorAffixType.DemonFog && card.type == CardType.Spell)
+            {
+                modifier += 1;
+            }
+
+            return modifier;
+        }
+
+        public float StructureProductionIntervalMultiplier()
+        {
+            var multiplier = 1f;
+            if (CurrentHeroClass == HeroClassType.SpiritSummoner) multiplier *= 0.84f;
+            if (CurrentHeroClass == HeroClassType.ThunderMage) multiplier *= 1.12f;
+            if (HasArtifact("artifact_ten_thousand_banner")) multiplier *= 0.65f;
+            if (CurrentFloorAffix() == FloorAffixType.ImmortalArray) multiplier *= 0.88f;
+            return multiplier;
+        }
+
+        public int MoraleFromStructureCard(CardDefinition card)
+        {
+            return card != null && card.type == CardType.Structure && HasArtifact("artifact_general_platform") ? 1 : 0;
+        }
+
+        public bool ConvertCurseToMorale()
+        {
+            return HasArtifact("artifact_curse_gourd");
+        }
+
+        public float UnitRangeMultiplier(UnitDefinition unit, Faction faction)
+        {
+            if (unit == null)
+            {
+                return 1f;
+            }
+
+            var multiplier = 1f;
+            if (CurrentFloorAffix() == FloorAffixType.DemonFog && unit.IsRanged)
+            {
+                multiplier *= faction == Faction.Player ? 0.78f : 0.88f;
+            }
+
+            return multiplier;
+        }
+
+        public float UnitMaxHpMultiplier(UnitDefinition unit, Faction faction)
+        {
+            if (unit == null)
+            {
+                return 1f;
+            }
+
+            var multiplier = 1f;
+            if (CurrentFloorAffix() == FloorAffixType.ImmortalArray && faction == Faction.Player && unit.role == UnitRole.Structure)
+            {
+                multiplier += 0.20f;
+            }
+
+            return multiplier;
+        }
+
+        public float EnemySpawnIntervalMultiplier()
+        {
+            return CurrentFloorAffix() == FloorAffixType.DemonTide ? 0.82f : 1f;
+        }
+
+        public float ManaRegenMultiplier()
+        {
+            var multiplier = 1f;
+            if (CurrentHeroClass == HeroClassType.ThunderMage) multiplier *= 1.12f;
+            if (CurrentHeroClass == HeroClassType.SpiritSummoner) multiplier *= 0.94f;
+            if (CurrentFloorAffix() == FloorAffixType.ImmortalArray) multiplier *= 0.92f;
+            return multiplier;
+        }
+
+        public float FloorLightningDamage()
+        {
+            return CurrentFloorAffix() == FloorAffixType.ThunderTribulation ? 12f + CurrentRun.floor * 3f : 0f;
         }
 
         private bool HasArtifact(string id)
@@ -588,9 +1123,11 @@ namespace XTD.Flow
             var random = RandomForNode(node, 73);
             var cardChoiceCount = node.NodeType switch
             {
+                MapNodeType.NormalMonster => 3,
                 MapNodeType.EliteMonster => 3,
                 MapNodeType.SmallBoss => 4,
                 MapNodeType.FinalBoss => 5,
+                MapNodeType.Mystery => 3,
                 _ => 0
             };
             var pickCount = node.NodeType switch
@@ -598,13 +1135,17 @@ namespace XTD.Flow
                 MapNodeType.SmallBoss => 2,
                 MapNodeType.FinalBoss => 3,
                 MapNodeType.EliteMonster => 1,
+                MapNodeType.NormalMonster => 1,
+                MapNodeType.Mystery => 1,
                 _ => 0
             };
 
             if (cardChoiceCount > 0)
             {
-                var cards = RandomCards(random, cardChoiceCount, includeUpgraded: true, preferHighQuality: node.NodeType is MapNodeType.SmallBoss or MapNodeType.FinalBoss);
-                QueueCardReward(cards, pickCount);
+                var rewardTier = RewardTierForNode(node.NodeType);
+                var cards = RandomCards(random, cardChoiceCount, includeUpgraded: true, rewardTier);
+                var skipGold = node.NodeType == MapNodeType.NormalMonster ? 8 : 0;
+                QueueCardReward(cards, pickCount, skipGold);
                 messages.Add($"卡牌奖励：从 {cards.Count} 张中选择 {pickCount} 张");
             }
 
@@ -628,17 +1169,19 @@ namespace XTD.Flow
             return string.Join("；", messages) + "。";
         }
 
-        private void QueueCardReward(IReadOnlyList<CardDefinition> cards, int pickCount)
+        private void QueueCardReward(IReadOnlyList<CardDefinition> cards, int pickCount, int skipGold = 0)
         {
             CurrentRun.pendingCardRewardIds.Clear();
             CurrentRun.pendingCardRewardIds.AddRange(cards.Where(card => card != null).Select(card => card.id));
             CurrentRun.pendingCardRewardPickCount = Mathf.Min(Mathf.Max(1, pickCount), CurrentRun.pendingCardRewardIds.Count);
+            CurrentRun.pendingCardRewardSkipGold = Mathf.Max(0, skipGold);
         }
 
         private void FinishPendingCardReward(string message)
         {
             CurrentRun.pendingCardRewardIds.Clear();
             CurrentRun.pendingCardRewardPickCount = 0;
+            CurrentRun.pendingCardRewardSkipGold = 0;
 
             if (hasPendingNode)
             {
@@ -647,6 +1190,7 @@ namespace XTD.Flow
             }
 
             CurrentRun.lastMessage = message;
+            AppendRunLog(message);
         }
 
         private void GrantGold(int amount)
@@ -658,6 +1202,7 @@ namespace XTD.Flow
         {
             var multiplier = 1f;
             if (HasArtifact("artifact_field_purse")) multiplier += 0.20f;
+            if (CurrentFloorAffix() == FloorAffixType.DemonTide) multiplier += 0.15f;
             return multiplier;
         }
 
@@ -775,11 +1320,125 @@ namespace XTD.Flow
             };
         }
 
+        private string ResolveMysteryTemplate(int templateIndex, System.Random random)
+        {
+            switch (templateIndex)
+            {
+                case 0:
+                {
+                    var gold = 48 + CurrentRun.floor * 12 + ArtifactBonusOpportunityGold();
+                    GrantGold(gold);
+                    QueueCardReward(RandomCards(random, 3, includeUpgraded: true, CardRewardTier.Elite), 1, 10);
+                    return $"神秘：稳妥探查，获得 {Mathf.CeilToInt(gold * GoldMultiplier())} 金币，并从 3 张卡中选择 1 张。";
+                }
+                case 1:
+                {
+                    if (random.NextDouble() < 0.48)
+                    {
+                        pendingBattleSuppressRewards = true;
+                        pendingEncounterId = "encounter_mystery_punishment";
+                        CurrentRun.lastMessage = "神秘：误入凶阵，打赢也没有额外奖励。";
+                        SceneManager.LoadScene(BattleScene);
+                        return "神秘：误入凶阵。";
+                    }
+
+                    var gold = 86 + CurrentRun.floor * 20 + ArtifactBonusOpportunityGold();
+                    GrantGold(gold);
+                    QueueCardReward(RandomCards(random, 3, includeUpgraded: true, CardRewardTier.High), 1, 0);
+                    return $"神秘：深入凶阵后夺得秘藏，获得 {Mathf.CeilToInt(gold * GoldMultiplier())} 金币，并从 3 张高质量卡中选择 1 张。";
+                }
+                default:
+                {
+                    var hpCost = Mathf.CeilToInt(PlayerMaxHpForRun() * 0.12f);
+                    CurrentRun.playerHp = Mathf.Max(1f, CurrentRun.playerHp - hpCost);
+                    AddRandomCurse(random, 1);
+                    if (TryGrantRandomArtifact(random, out var artifactName))
+                    {
+                        return $"神秘：献祭换宝，失去 {hpCost} 生命并加入 1 张诅咒，获得神器：{artifactName}。";
+                    }
+
+                    QueueCardReward(RandomCards(random, 4, includeUpgraded: true, CardRewardTier.High), 1, 0);
+                    return $"神秘：献祭换宝，失去 {hpCost} 生命并加入 1 张诅咒，从 4 张高质量卡中选择 1 张。";
+                }
+            }
+        }
+
+        private static OpportunityEventPreview MysteryPreview(int templateIndex)
+        {
+            return templateIndex switch
+            {
+                0 => new OpportunityEventPreview
+                {
+                    title = "稳妥探查",
+                    story = "沿着阵眼边缘搜索，不惊动最深处的妖阵。",
+                    reward = "金币，并从 3 张卡中选择 1 张。",
+                    risk = "收益较稳，爆发不高。",
+                    templateIndex = templateIndex
+                },
+                1 => new OpportunityEventPreview
+                {
+                    title = "深入凶阵",
+                    story = "强行冲进妖阵深处，可能夺得秘藏，也可能被拖入惩罚战。",
+                    reward = "高额金币和高质量卡牌。",
+                    risk = "有概率触发强力怪物战，胜利也没有额外奖励。",
+                    templateIndex = templateIndex
+                },
+                _ => new OpportunityEventPreview
+                {
+                    title = "献祭换宝",
+                    story = "以气血和因果为价，换取更偏构筑方向的收获。",
+                    reward = "优先获得一个神器，或改为高质量卡牌。",
+                    risk = "失去生命，并加入 1 张诅咒牌。",
+                    templateIndex = templateIndex
+                }
+            };
+        }
+
+        private static IReadOnlyList<int> RandomTemplateIndices(System.Random random, int maxExclusive, int count)
+        {
+            return Enumerable.Range(0, maxExclusive)
+                .OrderBy(_ => random.Next())
+                .Take(Mathf.Min(count, maxExclusive))
+                .ToList();
+        }
+
+        private void AddRandomCurse(System.Random random, int count)
+        {
+            var curses = Catalog.cards
+                .Where(card => card != null && card.type == CardType.Curse)
+                .OrderBy(_ => random.Next())
+                .Take(Mathf.Max(1, count))
+                .ToList();
+
+            foreach (var curse in curses)
+            {
+                CurrentRun.deckCardIds.Add(curse.id);
+            }
+        }
+
+        private bool TryGrantRandomArtifact(System.Random random, out string artifactName)
+        {
+            artifactName = string.Empty;
+            var artifact = Catalog.artifacts
+                .Where(candidate => candidate != null && candidate.id != "artifact_permanent_relic" && !CurrentRun.artifactIds.Contains(candidate.id))
+                .OrderByDescending(candidate => candidate.rarity)
+                .ThenBy(_ => random.Next())
+                .FirstOrDefault();
+            if (artifact == null)
+            {
+                return false;
+            }
+
+            CurrentRun.artifactIds.Add(artifact.id);
+            artifactName = artifact.displayName;
+            return true;
+        }
+
         private bool TryUpgradeRandomCard(System.Random random, out string upgradedName)
         {
             upgradedName = string.Empty;
             var group = CurrentRun.deckCardIds
-                .Where(id => DemoContentFactory.CardLevelFromId(id) < 3)
+                .Where(IsCardUpgradable)
                 .GroupBy(id => id)
                 .Where(candidate => candidate.Count() >= 3)
                 .OrderBy(_ => random.Next())
@@ -790,7 +1449,14 @@ namespace XTD.Flow
         private bool TryUpgradeCardSet(string cardId, out string upgradedName)
         {
             upgradedName = string.Empty;
-            if (CurrentRun == null || string.IsNullOrWhiteSpace(cardId) || DemoContentFactory.CardLevelFromId(cardId) >= 3)
+            if (CurrentRun == null || !IsCardUpgradable(cardId))
+            {
+                return false;
+            }
+
+            var upgradedId = DemoContentFactory.UpgradeCardId(cardId);
+            var upgradedCard = Catalog.FindCard(upgradedId);
+            if (upgradedCard == null)
             {
                 return false;
             }
@@ -817,30 +1483,174 @@ namespace XTD.Flow
                 return false;
             }
 
-            var upgradedId = DemoContentFactory.UpgradeCardId(cardId);
             CurrentRun.deckCardIds.Add(upgradedId);
-            upgradedName = Catalog.FindCard(upgradedId)?.displayName ?? upgradedId;
+            upgradedName = upgradedCard.displayName;
             return true;
+        }
+
+        private bool IsCardUpgradable(string cardId)
+        {
+            if (string.IsNullOrWhiteSpace(cardId) || DemoContentFactory.CardLevelFromId(cardId) >= 3)
+            {
+                return false;
+            }
+
+            var card = Catalog.FindCard(cardId);
+            if (card == null || card.type == CardType.Curse)
+            {
+                return false;
+            }
+
+            return Catalog.FindCard(DemoContentFactory.UpgradeCardId(cardId)) != null;
+        }
+
+        private enum CardRewardTier
+        {
+            Basic,
+            Elite,
+            Boss,
+            High
         }
 
         private IReadOnlyList<CardDefinition> RandomCards(System.Random random, int count, bool includeUpgraded, bool preferHighQuality = false)
         {
+            return RandomCards(random, count, includeUpgraded, preferHighQuality ? CardRewardTier.High : CardRewardTier.Basic);
+        }
+
+        private IReadOnlyList<CardDefinition> RandomCards(System.Random random, int count, bool includeUpgraded, CardRewardTier rewardTier)
+        {
             var candidates = Catalog.cards
-                .Where(card => card != null && (includeUpgraded || card.level == 1))
+                .Where(card => card != null && card.type != CardType.Curse && (includeUpgraded || card.level == 1))
                 .ToList();
 
-            if (preferHighQuality)
+            var result = new List<CardDefinition>();
+            while (result.Count < count && candidates.Count > 0)
             {
-                candidates = candidates
-                    .OrderByDescending(card => card.level)
-                    .ThenByDescending(card => card.rarity)
-                    .ThenBy(_ => random.Next())
-                    .ToList();
+                var totalWeight = candidates.Sum(card => CardRewardWeight(card, rewardTier) * HeroClassCardWeight(card));
+                var roll = random.NextDouble() * Math.Max(0.001, totalWeight);
+                var cursor = 0.0;
+                CardDefinition picked = null;
+                foreach (var card in candidates)
+                {
+                    cursor += CardRewardWeight(card, rewardTier) * HeroClassCardWeight(card);
+                    if (roll <= cursor)
+                    {
+                        picked = card;
+                        break;
+                    }
+                }
+
+                picked ??= candidates[random.Next(candidates.Count)];
+                result.Add(picked);
+                candidates.Remove(picked);
             }
 
-            var ordered = preferHighQuality ? candidates : candidates.OrderBy(_ => random.Next()).ToList();
-            var cards = ordered.Take(count).ToList();
-            return cards.Count > 0 ? cards : Catalog.cards.Take(count).ToList();
+            return result.Count > 0
+                ? result
+                : Catalog.cards.Where(card => card != null && card.type != CardType.Curse).Take(count).ToList();
+        }
+
+        private static CardRewardTier RewardTierForNode(MapNodeType nodeType)
+        {
+            return nodeType switch
+            {
+                MapNodeType.EliteMonster => CardRewardTier.Elite,
+                MapNodeType.SmallBoss or MapNodeType.FinalBoss => CardRewardTier.Boss,
+                MapNodeType.Mystery => CardRewardTier.High,
+                _ => CardRewardTier.Basic
+            };
+        }
+
+        private static double CardRewardWeight(CardDefinition card, CardRewardTier rewardTier)
+        {
+            var rarityWeight = rewardTier switch
+            {
+                CardRewardTier.Elite => card.rarity switch
+                {
+                    CardRarity.Common => 45,
+                    CardRarity.Uncommon => 32,
+                    CardRarity.Rare => 18,
+                    CardRarity.Epic => 4,
+                    CardRarity.Legendary => 1,
+                    _ => 1
+                },
+                CardRewardTier.Boss => card.rarity switch
+                {
+                    CardRarity.Common => 12,
+                    CardRarity.Uncommon => 32,
+                    CardRarity.Rare => 35,
+                    CardRarity.Epic => 16,
+                    CardRarity.Legendary => 5,
+                    _ => 1
+                },
+                CardRewardTier.High => card.rarity switch
+                {
+                    CardRarity.Common => 8,
+                    CardRarity.Uncommon => 24,
+                    CardRarity.Rare => 40,
+                    CardRarity.Epic => 20,
+                    CardRarity.Legendary => 8,
+                    _ => 1
+                },
+                _ => card.rarity switch
+                {
+                    CardRarity.Common => 78,
+                    CardRarity.Uncommon => 18,
+                    CardRarity.Rare => 4,
+                    CardRarity.Epic => 1,
+                    CardRarity.Legendary => 0.2,
+                    _ => 1
+                }
+            };
+
+            var archetypeWeight = card.type switch
+            {
+                CardType.Structure => 1.25,
+                CardType.Spell => 1.05,
+                CardType.Tactic => 0.95,
+                CardType.Hero => 0.55,
+                _ => 1.0
+            };
+
+            return Math.Max(0.01, rarityWeight * archetypeWeight);
+        }
+
+        private double HeroClassCardWeight(CardDefinition card)
+        {
+            if (card == null)
+            {
+                return 1.0;
+            }
+
+            return CurrentHeroClass switch
+            {
+                HeroClassType.SpiritSummoner => card.type switch
+                {
+                    CardType.Structure => 1.65,
+                    CardType.Soldier => 1.35,
+                    CardType.Tactic => 1.15,
+                    CardType.Spell => 0.72,
+                    CardType.Debuff => 0.82,
+                    _ => 1.0
+                },
+                HeroClassType.ThunderMage => card.type switch
+                {
+                    CardType.Spell => 1.65,
+                    CardType.Debuff => 1.45,
+                    CardType.Economy => 1.25,
+                    CardType.Structure => 0.70,
+                    CardType.Soldier => 0.78,
+                    _ => 1.0
+                },
+                _ => card.type switch
+                {
+                    CardType.Soldier => 1.20,
+                    CardType.EliteSoldier => 1.20,
+                    CardType.Tactic => 1.25,
+                    CardType.Structure => 1.08,
+                    _ => 1.0
+                }
+            };
         }
 
         private void ResolvePendingNonBattle(string message)
@@ -853,6 +1663,7 @@ namespace XTD.Flow
             AdvanceAfterResolvedNode(pendingNode);
             ClearPendingNode();
             CurrentRun.lastMessage = message;
+            AppendRunLog(message);
         }
 
         private void AdvanceAfterResolvedNode(MapNodeRuntime node)
@@ -908,9 +1719,100 @@ namespace XTD.Flow
             pendingNode = null;
         }
 
+        private void ClearPendingCardReward()
+        {
+            if (CurrentRun == null)
+            {
+                return;
+            }
+
+            CurrentRun.pendingCardRewardIds.Clear();
+            CurrentRun.pendingCardRewardPickCount = 0;
+            CurrentRun.pendingCardRewardSkipGold = 0;
+        }
+
+        private void AppendRunLog(string message)
+        {
+            if (CurrentRun == null || string.IsNullOrWhiteSpace(message))
+            {
+                return;
+            }
+
+            var stamp = $"迷宫 {CurrentRun.floor} · 房间 {CurrentRun.row}/10";
+            CurrentRun.eventLog.Add($"{stamp}  {message}");
+            while (CurrentRun.eventLog.Count > MaxRunLogEntries)
+            {
+                CurrentRun.eventLog.RemoveAt(0);
+            }
+        }
+
+        private void DebugJumpTo(int row, string message)
+        {
+            if (CurrentRun == null)
+            {
+                return;
+            }
+
+            EnsureMap();
+            ClearPendingNode();
+            ClearPendingCardReward();
+            CurrentRun.row = Mathf.Clamp(row, 1, 10);
+            SetAvailableNodesForCurrentRow();
+            CurrentRun.lastMessage = message;
+            AppendRunLog(message);
+        }
+
+        private static void AssignFloorAffixes(RunState run)
+        {
+            if (run == null)
+            {
+                return;
+            }
+
+            run.floorAffixes.Clear();
+            var random = new System.Random(run.seed + 2027);
+            var pool = new[]
+            {
+                FloorAffixType.DemonFog,
+                FloorAffixType.ThunderTribulation,
+                FloorAffixType.DemonTide,
+                FloorAffixType.ImmortalArray
+            };
+
+            for (var i = 0; i < 3; i++)
+            {
+                run.floorAffixes.Add(pool[random.Next(pool.Length)]);
+            }
+        }
+
+        private static string FloorAffixName(FloorAffixType affix)
+        {
+            return affix switch
+            {
+                FloorAffixType.DemonFog => "妖雾迷天",
+                FloorAffixType.ThunderTribulation => "天雷劫池",
+                FloorAffixType.DemonTide => "万妖潮",
+                FloorAffixType.ImmortalArray => "仙阵余辉",
+                _ => "无词缀"
+            };
+        }
+
+        private static string FloorAffixDescription(FloorAffixType affix)
+        {
+            return affix switch
+            {
+                FloorAffixType.DemonFog => "远程射程下降，法术费用 +1。",
+                FloorAffixType.ThunderTribulation => "战场周期性落雷，法术伤害小幅提高。",
+                FloorAffixType.DemonTide => "敌方出兵更快，金币收益 +15%。",
+                FloorAffixType.ImmortalArray => "我方建筑更硬且产兵略快，但费用恢复略慢。",
+                _ => "本层没有额外规则。"
+            };
+        }
+
         private void ApplyPermanentStartBonuses(RunState run)
         {
             var profile = PermanentProgress;
+            var messages = new List<string>();
             foreach (var artifactId in profile.permanentArtifactIds)
             {
                 if (!run.permanentArtifactIds.Contains(artifactId))
@@ -919,11 +1821,25 @@ namespace XTD.Flow
                 }
             }
 
+            var heroLevel = HeroLevelForExperience(profile.totalHeroExperience);
+            if (heroLevel > 1)
+            {
+                var bonusGold = (heroLevel - 1) * 4;
+                run.gold += bonusGold;
+                run.playerHp = Mathf.Min(PlayerMaxHpForRun(), run.playerHp + (heroLevel - 1) * 2f);
+                messages.Add($"主角等级 {heroLevel} 生效：初始金币 +{bonusGold}，生命上限 +{(heroLevel - 1) * 2}");
+            }
+
             if (profile.permanentArtifactIds.Contains("artifact_permanent_relic"))
             {
                 run.gold += 20;
-                run.playerHp = Mathf.Min(PlayerMaxHpForRun() + 5f, run.playerHp + 5f);
-                run.lastMessage = "永久神器通关遗珍生效：本次探索初始金币 +20，生命 +5。";
+                run.playerHp = Mathf.Min(PlayerMaxHpForRun(), run.playerHp + 5f);
+                messages.Add("永久神器通关遗珍生效：本次探索初始金币 +20，生命 +5");
+            }
+
+            if (messages.Count > 0)
+            {
+                run.lastMessage = string.Join("；", messages) + "。";
             }
         }
 
@@ -952,6 +1868,27 @@ namespace XTD.Flow
             }
 
             PermanentProgressStore.Save(profile);
+        }
+
+        private static int HeroLevelForExperience(int experience)
+        {
+            var level = 1;
+            while (experience >= ExperienceRequiredForLevel(level + 1) && level < 99)
+            {
+                level++;
+            }
+
+            return level;
+        }
+
+        private static int ExperienceRequiredForLevel(int level)
+        {
+            if (level <= 1)
+            {
+                return 0;
+            }
+
+            return 40 + (level - 2) * 55 + Mathf.Max(0, level - 3) * 20;
         }
 
         private void EnsureMap()
@@ -1037,6 +1974,39 @@ namespace XTD.Flow
                 MapNodeType.SmallBoss => "小首领",
                 MapNodeType.FinalBoss => "最终首领",
                 _ => "节点"
+            };
+        }
+
+        public static string HeroClassName(HeroClassType heroClass)
+        {
+            return heroClass switch
+            {
+                HeroClassType.SpiritSummoner => "万灵召使",
+                HeroClassType.ThunderMage => "雷火方士",
+                _ => "边境指挥官"
+            };
+        }
+
+        public static string HeroClassShortStyle(HeroClassType heroClass)
+        {
+            return heroClass switch
+            {
+                HeroClassType.SpiritSummoner => "建筑生产 / 兵潮召唤",
+                HeroClassType.ThunderMage => "法术爆发 / 控场节奏",
+                _ => "士兵推进 / 战术士气"
+            };
+        }
+
+        public static string HeroClassDescription(HeroClassType heroClass)
+        {
+            return heroClass switch
+            {
+                HeroClassType.SpiritSummoner =>
+                    "阵位更多，建筑更便宜、产兵更快，士气触发更早；费用回复略慢，法术更贵。",
+                HeroClassType.ThunderMage =>
+                    "费用上限和开局费用更高，法术与控制牌更便宜且伤害更高；建筑较慢，阵位略少。",
+                _ =>
+                    "均衡指挥职业，士兵和精英攻击略高，依靠士气强化士兵、精英、英雄和战术牌。"
             };
         }
     }

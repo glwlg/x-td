@@ -1,0 +1,38 @@
+[1/19] starting Cards__card_binding_talisman.png
+[2/19] starting Cards__card_break_formation.png
+[3/19] starting Cards__card_cloud_banner.png
+Wrote output\imagegen\xtd-hd-assets\raw\Cards__card_break_formation.png in 49.1s
+[4/19] starting Cards__card_healing_rain.png
+Wrote output\imagegen\xtd-hd-assets\raw\Cards__card_cloud_banner.png in 54.5s
+[5/19] starting Cards__card_mountain_seal.png
+Wrote output\imagegen\xtd-hd-assets\raw\Cards__card_mountain_seal.png in 57.7s
+[6/19] starting Cards__card_poison_gourd.png
+Wrote output\imagegen\xtd-hd-assets\raw\Cards__card_healing_rain.png in 94.2s
+[7/19] starting Cards__card_treasure_talisman.png
+Wrote output\imagegen\xtd-hd-assets\raw\Cards__card_poison_gourd.png in 51.4s
+[8/19] starting FX__fx_divine_commander_order.png
+Wrote output\imagegen\xtd-hd-assets\raw\Cards__card_treasure_talisman.png in 49.6s
+[9/19] starting FX__fx_divine_summon_gate.png
+Wrote output\imagegen\xtd-hd-assets\raw\FX__fx_divine_commander_order.png in 68.3s
+[10/19] starting FX__fx_divine_thunder_fire.png
+Wrote output\imagegen\xtd-hd-assets\raw\FX__fx_divine_summon_gate.png in 63.6s
+[11/19] starting UI__Artifacts__artifact_curse_gourd.png
+Wrote output\imagegen\xtd-hd-assets\raw\FX__fx_divine_thunder_fire.png in 67.4s
+[12/19] starting UI__Artifacts__artifact_general_platform.png
+Wrote output\imagegen\xtd-hd-assets\raw\UI__Artifacts__artifact_curse_gourd.png in 48.3s
+[13/19] starting UI__Artifacts__artifact_ten_thousand_banner.png
+Wrote output\imagegen\xtd-hd-assets\raw\UI__Artifacts__artifact_general_platform.png in 69.0s
+[14/19] starting UI__Artifacts__artifact_thunder_fire_box.png
+Wrote output\imagegen\xtd-hd-assets\raw\UI__Artifacts__artifact_ten_thousand_banner.png in 72.4s
+[15/19] starting UI__Classes__hero_class_border_commander.png
+Wrote output\imagegen\xtd-hd-assets\raw\UI__Artifacts__artifact_thunder_fire_box.png in 68.8s
+[16/19] starting UI__Classes__hero_class_spirit_summoner.png
+Wrote output\imagegen\xtd-hd-assets\raw\UI__Classes__hero_class_border_commander.png in 68.8s
+[17/19] starting UI__Classes__hero_class_thunder_mage.png
+Wrote output\imagegen\xtd-hd-assets\raw\UI__Classes__hero_class_thunder_mage.png in 64.8s
+[18/19] starting UI__map_misty_valley_bg.png
+Wrote output\imagegen\xtd-hd-assets\raw\UI__map_misty_valley_bg.png in 51.4s
+[19/19] starting UI__upgrade_sanctum_bg.png
+Wrote output\imagegen\xtd-hd-assets\raw\UI__upgrade_sanctum_bg.png in 56.8s
+Wrote output\imagegen\xtd-hd-assets\raw\UI__Classes__hero_class_spirit_summoner.png in 187.6s
+Generated 19 jobs.

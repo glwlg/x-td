@@ -7,12 +7,14 @@ namespace XTD.Battle
         public EffectType type;
         public float value;
         public float remaining;
+        public float tickTimer;
 
         public TimedUnitModifier(EffectType type, float value, float duration)
         {
             this.type = type;
             this.value = value;
             remaining = duration;
+            tickTimer = 0.65f;
         }
     }
 }

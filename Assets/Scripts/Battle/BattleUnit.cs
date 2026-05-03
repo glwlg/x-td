@@ -14,9 +14,13 @@ namespace XTD.Battle
         private Transform healthBarRoot;
         private SpriteRenderer healthBarBack;
         private SpriteRenderer healthBarFill;
+        private SpriteRenderer shieldGlow;
+        private SpriteRenderer attackGlow;
         private float attackCooldown;
         private float productionCooldown;
         private float shield;
+        private float shieldGlowTimer;
+        private float attackGlowTimer;
         private Vector3 baseScale;
         private Color baseColor;
         private float animationSeed;
@@ -40,10 +44,10 @@ namespace XTD.Battle
             controller = owner;
             Definition = definition;
             Faction = faction;
-            CurrentHp = definition.maxHp;
+            CurrentHp = EffectiveMaxHp();
             shield = 0f;
             attackCooldown = Random.Range(0f, definition.attackInterval * 0.4f);
-            productionCooldown = definition.ProducesUnits ? definition.productionInterval : 0f;
+            productionCooldown = definition.ProducesUnits ? EffectiveProductionInterval() : 0f;
             modifiers.Clear();
             transform.position = position;
             gameObject.name = $"{faction}_{definition.displayName}";
@@ -55,6 +59,8 @@ namespace XTD.Battle
             movementSignal = 0f;
             attackPulse = 0f;
             hitFlash = 0f;
+            shieldGlowTimer = 0f;
+            attackGlowTimer = 0f;
 
             if (spriteRenderer == null)
             {
@@ -65,7 +71,9 @@ namespace XTD.Battle
             baseColor = definition.tint;
             spriteRenderer.color = baseColor;
             spriteRenderer.flipX = false;
+            EnsureStatusGlows();
             UpdateSortingOrder();
+            UpdateStatusGlows();
             EnsureHealthBar();
             UpdateHealthBar();
         }
@@ -88,6 +96,11 @@ namespace XTD.Battle
             }
 
             TickModifiers(deltaTime);
+            if (HasModifier(EffectType.Stun))
+            {
+                return;
+            }
+
             attackCooldown -= deltaTime;
             TickProduction(deltaTime);
 
@@ -141,18 +154,42 @@ namespace XTD.Battle
                 return;
             }
 
-            CurrentHp = Mathf.Min(Definition.maxHp, CurrentHp + amount);
+            CurrentHp = Mathf.Min(EffectiveMaxHp(), CurrentHp + amount);
             UpdateHealthBar();
         }
 
         public void AddShield(float amount)
         {
             shield += Mathf.Max(0f, amount);
+            shieldGlowTimer = Mathf.Max(shieldGlowTimer, 5.5f);
+            UpdateStatusGlows();
         }
 
         public void AddModifier(EffectType type, float value, float duration)
         {
             modifiers.Add(new TimedUnitModifier(type, value, duration));
+            if (type is EffectType.BuffAttack or EffectType.BuffAttackSpeed)
+            {
+                attackGlowTimer = Mathf.Max(attackGlowTimer, Mathf.Max(1.2f, duration));
+                UpdateStatusGlows();
+            }
+        }
+
+        public void KnockbackFrom(Vector3 sourcePosition, float distance)
+        {
+            if (!IsAlive || distance <= 0f || Definition.role == UnitRole.Boss || Definition.role == UnitRole.Structure)
+            {
+                return;
+            }
+
+            var direction = transform.position - sourcePosition;
+            if (direction.sqrMagnitude < 0.0001f)
+            {
+                direction = Faction == Faction.Player ? Vector3.down : Vector3.up;
+            }
+
+            transform.position += direction.normalized * Mathf.Clamp(distance, 0.15f, 1.4f);
+            movementSignal = 1f;
         }
 
         public float EffectiveAttack()
@@ -183,10 +220,39 @@ namespace XTD.Battle
             return Definition.attackInterval * Mathf.Clamp(multiplier, 0.25f, 3f);
         }
 
+        private float EffectiveMaxHp()
+        {
+            return Definition.maxHp * controller.MaxHpMultiplierFor(Definition, Faction);
+        }
+
+        private float EffectiveRange()
+        {
+            return Definition.range * controller.RangeMultiplierFor(Definition, Faction);
+        }
+
+        private float EffectiveProductionInterval()
+        {
+            return Mathf.Max(0.35f, Definition.productionInterval * controller.ProductionIntervalMultiplierFor(Definition, Faction));
+        }
+
         private void TickModifiers(float deltaTime)
         {
             for (var i = modifiers.Count - 1; i >= 0; i--)
             {
+                if (modifiers[i].type is EffectType.Burn or EffectType.Poison)
+                {
+                    modifiers[i].tickTimer -= deltaTime;
+                    if (modifiers[i].tickTimer <= 0f)
+                    {
+                        modifiers[i].tickTimer += 0.65f;
+                        ApplyStatusDamage(modifiers[i].value * 0.65f, modifiers[i].type);
+                        if (!IsAlive)
+                        {
+                            return;
+                        }
+                    }
+                }
+
                 modifiers[i].remaining -= deltaTime;
                 if (modifiers[i].remaining <= 0f)
                 {
@@ -195,9 +261,53 @@ namespace XTD.Battle
             }
         }
 
+        private void ApplyStatusDamage(float damage, EffectType source)
+        {
+            if (!IsAlive || damage <= 0f)
+            {
+                return;
+            }
+
+            CurrentHp -= damage;
+            hitFlash = Mathf.Max(hitFlash, source == EffectType.Burn ? 0.75f : 0.45f);
+            controller.SpawnDamageNumber(transform.position + new Vector3(0f, 0.18f, 0f), damage);
+            UpdateHealthBar();
+            if (CurrentHp <= 0f)
+            {
+                Die();
+            }
+        }
+
+        private bool HasModifier(EffectType type)
+        {
+            foreach (var modifier in modifiers)
+            {
+                if (modifier.type == type)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private float EffectiveMoveSpeedMultiplier()
+        {
+            var multiplier = 1f;
+            foreach (var modifier in modifiers)
+            {
+                if (modifier.type == EffectType.Slow)
+                {
+                    multiplier -= Mathf.Clamp01(modifier.value);
+                }
+            }
+
+            return Mathf.Clamp(multiplier, 0.18f, 2f);
+        }
+
         private bool IsInRange(Vector3 targetPosition)
         {
-            return Vector2.Distance(transform.position, targetPosition) <= Definition.range;
+            return Vector2.Distance(transform.position, targetPosition) <= EffectiveRange();
         }
 
         private void TryAttack(BattleUnit target)
@@ -251,7 +361,7 @@ namespace XTD.Battle
                 return;
             }
 
-            var step = Definition.moveSpeed * controller.MoveSpeedMultiplierFor(Definition) * deltaTime;
+            var step = Definition.moveSpeed * EffectiveMoveSpeedMultiplier() * controller.MoveSpeedMultiplierFor(Definition) * deltaTime;
             var next = Vector2.MoveTowards(current, target, step);
             if ((next - current).sqrMagnitude > 0.000001f)
             {
@@ -274,7 +384,7 @@ namespace XTD.Battle
                 return;
             }
 
-            productionCooldown = Definition.productionInterval;
+            productionCooldown = EffectiveProductionInterval();
             var direction = Faction == Faction.Player ? 1f : -1f;
             for (var i = 0; i < Definition.productionCount; i++)
             {
@@ -293,6 +403,7 @@ namespace XTD.Battle
         private void Die()
         {
             controller.SpawnDeathEffect(transform.position, Faction);
+            controller.NotifyUnitDied(this);
             controller.ReleaseUnit(this);
         }
 
@@ -330,7 +441,7 @@ namespace XTD.Battle
                 return;
             }
 
-            var percent = Mathf.Clamp01(CurrentHp / Mathf.Max(1f, Definition.maxHp));
+            var percent = Mathf.Clamp01(CurrentHp / Mathf.Max(1f, EffectiveMaxHp()));
             healthBarBack.transform.localPosition = Vector3.zero;
             healthBarBack.transform.localScale = new Vector3(0.78f, 0.08f, 1f);
             healthBarFill.transform.localPosition = new Vector3(-0.39f + 0.39f * percent, 0f, -0.01f);
@@ -343,6 +454,8 @@ namespace XTD.Battle
             movementSignal = Mathf.MoveTowards(movementSignal, 0f, deltaTime * 6f);
             attackPulse = Mathf.MoveTowards(attackPulse, 0f, deltaTime * 5.5f);
             hitFlash = Mathf.MoveTowards(hitFlash, 0f, deltaTime * 7f);
+            shieldGlowTimer = Mathf.Max(0f, shieldGlowTimer - deltaTime);
+            attackGlowTimer = Mathf.Max(0f, attackGlowTimer - deltaTime);
 
             var isStructure = Definition.role == UnitRole.Structure;
             var frequency = isStructure ? 2.1f : Mathf.Lerp(2.4f, 9.5f, movementSignal);
@@ -360,6 +473,7 @@ namespace XTD.Battle
 
             spriteRenderer.color = Color.Lerp(baseColor, Color.white, hitFlash);
             UpdateSortingOrder();
+            UpdateStatusGlows();
         }
 
         private void UpdateSortingOrder()
@@ -379,6 +493,79 @@ namespace XTD.Battle
             {
                 healthBarFill.sortingOrder = spriteRenderer.sortingOrder + 21;
             }
+
+            if (shieldGlow != null)
+            {
+                shieldGlow.sortingOrder = spriteRenderer.sortingOrder - 2;
+            }
+
+            if (attackGlow != null)
+            {
+                attackGlow.sortingOrder = spriteRenderer.sortingOrder - 1;
+            }
+        }
+
+        private void EnsureStatusGlows()
+        {
+            if (shieldGlow == null)
+            {
+                shieldGlow = CreateStatusGlow("护盾光晕");
+            }
+
+            if (attackGlow == null)
+            {
+                attackGlow = CreateStatusGlow("强化光晕");
+            }
+        }
+
+        private SpriteRenderer CreateStatusGlow(string objectName)
+        {
+            var go = new GameObject(objectName);
+            go.transform.SetParent(transform, false);
+            go.transform.localPosition = Vector3.zero;
+            go.transform.localScale = Vector3.one;
+            var renderer = go.AddComponent<SpriteRenderer>();
+            renderer.sprite = RuntimeSpriteFactory.EffectSprite;
+            renderer.color = new Color(1f, 1f, 1f, 0f);
+            renderer.gameObject.SetActive(false);
+            return renderer;
+        }
+
+        private void UpdateStatusGlows()
+        {
+            if (Definition == null)
+            {
+                return;
+            }
+
+            EnsureStatusGlows();
+            var roleScale = Definition.role switch
+            {
+                UnitRole.Structure => 2.25f,
+                UnitRole.Boss => 1.9f,
+                UnitRole.Hero => 1.55f,
+                UnitRole.Elite => 1.45f,
+                _ => 1.25f
+            };
+
+            var pulse = 0.92f + Mathf.Sin(Time.time * 4.5f + animationSeed) * 0.08f;
+            var shieldActive = shield > 0.01f || shieldGlowTimer > 0f;
+            shieldGlow.gameObject.SetActive(shieldActive);
+            if (shieldActive)
+            {
+                var alpha = shield > 0.01f ? 0.34f : 0.22f * Mathf.Clamp01(shieldGlowTimer / 5.5f);
+                shieldGlow.color = new Color(1f, 0.78f, 0.20f, alpha);
+                shieldGlow.transform.localScale = Vector3.one * roleScale * pulse;
+            }
+
+            var attackActive = attackGlowTimer > 0f;
+            attackGlow.gameObject.SetActive(attackActive);
+            if (attackActive)
+            {
+                var alpha = 0.30f * Mathf.Clamp01(attackGlowTimer / 1.2f);
+                attackGlow.color = new Color(1f, 0.18f, 0.08f, alpha);
+                attackGlow.transform.localScale = Vector3.one * roleScale * 1.16f * (1.02f - pulse * 0.08f);
+            }
         }
 
         private static Vector3 ScaleFor(UnitRole role)
@@ -387,7 +574,7 @@ namespace XTD.Battle
             {
                 UnitRole.Elite => new Vector3(0.72f, 0.72f, 1f),
                 UnitRole.Hero => new Vector3(0.9f, 0.9f, 1f),
-                UnitRole.Structure => new Vector3(0.86f, 0.86f, 1f),
+                UnitRole.Structure => new Vector3(0.42f, 0.42f, 1f),
                 UnitRole.Monster => new Vector3(0.56f, 0.56f, 1f),
                 UnitRole.Boss => new Vector3(1.12f, 1.12f, 1f),
                 _ => new Vector3(0.50f, 0.50f, 1f)
