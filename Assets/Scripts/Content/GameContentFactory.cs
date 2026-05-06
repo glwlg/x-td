@@ -195,8 +195,8 @@ namespace XTD.Content
             UpsertFixedCard(catalog, "card_poison_gourd", "瘴毒葫芦", CardType.Debuff, CardRarity.Rare, 1, 3, CardReleaseRule.Anywhere, "在目标点释放毒雾，持续腐蚀并减速敌人。", "Assets/_Project/Art/AI/Cards/card_poison_gourd.png", () =>
             {
                 var card = new CardPayload();
-                card.effects.Add(Effect(EffectType.Poison, TargetRule.AllEnemies, 5.5f, 5.0f, 1.85f));
-                card.effects.Add(Effect(EffectType.Slow, TargetRule.AllEnemies, 0.35f, 5.0f, 1.85f));
+                card.effects.Add(Effect(EffectType.Poison, TargetRule.AllEnemies, 7.5f, 7.0f, 1.95f));
+                card.effects.Add(Effect(EffectType.Slow, TargetRule.AllEnemies, 0.45f, 7.0f, 1.95f));
                 return card;
             });
             UpsertFixedCard(catalog, "card_mountain_seal", "推山印", CardType.Spell, CardRarity.Uncommon, 1, 2, CardReleaseRule.Anywhere, "击退目标点附近敌人，并造成少量伤害。", "Assets/_Project/Art/AI/Cards/card_mountain_seal.png", () =>
@@ -240,62 +240,179 @@ namespace XTD.Content
                 card.spawns.Add(Spawn(archerAltar, 1));
                 return card;
             });
-            UpsertFixedCard(catalog, "card_frontier_phalanx", "玄甲军阵", CardType.Tactic, CardRarity.Uncommon, 1, 2, CardReleaseRule.None, "为全军加护盾并鼓舞士气，适合正面阵线反推。", "Assets/_Project/Art/AI/Cards/card_golden_barrier.png", () =>
+            UpsertFixedCard(catalog, "card_frontier_phalanx", "玄甲军阵", CardType.Tactic, CardRarity.Uncommon, 1, 2, CardReleaseRule.None, "为全军加护盾并鼓舞士气，适合正面阵线反推。", "Assets/_Project/Art/AI/Cards/card_frontier_phalanx.png", () =>
             {
                 var card = new CardPayload();
                 card.effects.Add(Effect(EffectType.Shield, TargetRule.AllFriendlyUnits, 18, 0, 99f));
                 card.effects.Add(Effect(EffectType.GainMorale, TargetRule.Self, 1, 0, 0));
                 return card;
             });
-            UpsertFixedCard(catalog, "card_general_vanguard", "先锋点将", CardType.EliteSoldier, CardRarity.Rare, 1, 4, CardReleaseRule.PlayerSide, "召来金甲天将并强化前线，压出一波高质量推进。", "Assets/_Project/Art/AI/Cards/card_heaven_general_order.png", () =>
+            UpsertFixedCard(catalog, "card_general_vanguard", "先锋点将", CardType.EliteSoldier, CardRarity.Rare, 1, 4, CardReleaseRule.PlayerSide, "召来金甲天将并强化前线，压出一波高质量推进。", "Assets/_Project/Art/AI/Cards/card_general_vanguard.png", () =>
             {
                 var card = new CardPayload();
                 card.spawns.Add(Spawn(shieldGuard, 2));
                 card.effects.Add(Effect(EffectType.BuffAttack, TargetRule.FriendlyFrontline, 0.28f, 5.5f, 99f));
                 return card;
             });
-            UpsertFixedCard(catalog, "card_spirit_gate", "万灵门", CardType.Structure, CardRarity.Rare, 1, 4, CardReleaseRule.PlayerSide, "放置香火兵营并立刻召来一批香火民兵，先稳住生产线。", "Assets/_Project/Art/AI/Cards/card_heavenly_workshop.png", () =>
+            UpsertFixedCard(catalog, "card_spirit_gate", "万灵门", CardType.Structure, CardRarity.Rare, 1, 4, CardReleaseRule.PlayerSide, "放置香火兵营并立刻召来一批香火民兵，先稳住生产线。", "Assets/_Project/Art/AI/Cards/card_spirit_gate.png", () =>
             {
                 var card = new CardPayload();
                 card.spawns.Add(Spawn(barracks, 1));
                 card.spawns.Add(Spawn(militia, 5));
                 return card;
             });
-            UpsertFixedCard(catalog, "card_ten_thousand_muster", "万兵齐召", CardType.Soldier, CardRarity.Rare, 1, 3, CardReleaseRule.PlayerSide, "一次性召来大量香火民兵，并获得士气延续兵潮。", "Assets/_Project/Art/AI/Cards/card_heaven_soldier_talisman.png", () =>
+            UpsertFixedCard(catalog, "card_ten_thousand_muster", "万兵齐召", CardType.Soldier, CardRarity.Rare, 1, 3, CardReleaseRule.PlayerSide, "一次性召来大量香火民兵，并获得士气延续兵潮。", "Assets/_Project/Art/AI/Cards/card_ten_thousand_muster.png", () =>
             {
                 var card = new CardPayload();
                 card.spawns.Add(Spawn(militia, 10));
                 card.effects.Add(Effect(EffectType.GainMorale, TargetRule.Self, 1, 0, 0));
                 return card;
             });
-            UpsertFixedCard(catalog, "card_thunder_chain", "连环雷诏", CardType.Spell, CardRarity.Rare, 1, 2, CardReleaseRule.Anywhere, "连续雷击目标区域并返还费用，支撑雷火方士的快节奏施法。", "Assets/_Project/Art/AI/Cards/card_thunder_talisman.png", () =>
+            UpsertFixedCard(catalog, "card_thunder_chain", "连环雷诏", CardType.Spell, CardRarity.Rare, 1, 2, CardReleaseRule.Anywhere, "连续雷击目标区域并返还费用，支撑雷火方士的快节奏施法。", "Assets/_Project/Art/AI/Cards/card_thunder_chain.png", () =>
             {
                 var card = new CardPayload();
                 card.effects.Add(Effect(EffectType.Damage, TargetRule.AllEnemies, 36, 0, 1.15f));
                 card.effects.Add(Effect(EffectType.GainMana, TargetRule.Self, 1, 0, 0));
                 return card;
             });
-            UpsertFixedCard(catalog, "card_samadhi_inferno", "离火燎原", CardType.Spell, CardRarity.Rare, 1, 4, CardReleaseRule.Anywhere, "在目标点爆开真火并持续灼烧，清理密集敌潮。", "Assets/_Project/Art/AI/Cards/card_fireball.png", () =>
+            UpsertFixedCard(catalog, "card_samadhi_inferno", "离火燎原", CardType.Spell, CardRarity.Rare, 1, 4, CardReleaseRule.Anywhere, "在目标点爆开真火并持续灼烧，清理密集敌潮。", "Assets/_Project/Art/AI/Cards/card_samadhi_inferno.png", () =>
             {
                 var card = new CardPayload();
                 card.effects.Add(Effect(EffectType.AreaDamage, TargetRule.AllEnemies, 44, 0, 1.85f));
                 card.effects.Add(Effect(EffectType.Burn, TargetRule.AllEnemies, 7f, 4.5f, 1.85f));
                 return card;
             });
-            UpsertFixedCard(catalog, "card_seal_array", "镇妖符阵", CardType.Debuff, CardRarity.Rare, 1, 2, CardReleaseRule.Anywhere, "布下符阵，减速、短暂定身并压低敌方前线攻击。", "Assets/_Project/Art/AI/Cards/card_binding_talisman.png", () =>
+            UpsertFixedCard(catalog, "card_seal_array", "镇妖符阵", CardType.Debuff, CardRarity.Rare, 1, 2, CardReleaseRule.Anywhere, "布下符阵，长期削弱、定身并毒蚀敌群。", "Assets/_Project/Art/AI/Cards/card_seal_array.png", () =>
             {
                 var card = new CardPayload();
-                card.effects.Add(Effect(EffectType.Slow, TargetRule.AllEnemies, 0.45f, 5.5f, 1.95f));
-                card.effects.Add(Effect(EffectType.Stun, TargetRule.AllEnemies, 1f, 0.55f, 1.55f));
-                card.effects.Add(Effect(EffectType.BuffAttack, TargetRule.EnemyFrontline, -0.22f, 5.5f, 99f));
+                card.effects.Add(Effect(EffectType.Slow, TargetRule.AllEnemies, 0.50f, 7.0f, 2.1f));
+                card.effects.Add(Effect(EffectType.Stun, TargetRule.AllEnemies, 1f, 0.85f, 1.75f));
+                card.effects.Add(Effect(EffectType.Poison, TargetRule.AllEnemies, 5.5f, 6.5f, 2.1f));
+                card.effects.Add(Effect(EffectType.BuffAttack, TargetRule.EnemyFrontline, -0.25f, 7.0f, 99f));
                 return card;
             });
-            UpsertFixedCard(catalog, "card_karmic_conversion", "转煞符", CardType.Economy, CardRarity.Uncommon, 1, 1, CardReleaseRule.None, "抽牌、回费并获得士气，把控场回合转成后续节奏。", "Assets/_Project/Art/AI/Cards/card_treasure_talisman.png", () =>
+            UpsertFixedCard(catalog, "card_karmic_conversion", "转煞符", CardType.Economy, CardRarity.Uncommon, 1, 1, CardReleaseRule.None, "抽牌、回费并获得士气，把控场回合转成后续节奏。", "Assets/_Project/Art/AI/Cards/card_karmic_conversion.png", () =>
             {
                 var card = new CardPayload();
                 card.effects.Add(Effect(EffectType.DrawCard, TargetRule.Self, 1, 0, 0));
                 card.effects.Add(Effect(EffectType.GainMana, TargetRule.Self, 1, 0, 0));
-                card.effects.Add(Effect(EffectType.GainMorale, TargetRule.Self, 1, 0, 0));
+                card.effects.Add(Effect(EffectType.GainMorale, TargetRule.Self, 2, 0, 0));
+                return card;
+            });
+            UpsertFixedCard(catalog, "card_dragon_banner", "赤龙军旗", CardType.Tactic, CardRarity.Rare, 1, 3, CardReleaseRule.None, "抽 1 张牌并获得 2 点士气，让边境指挥官连续打出强化军令。", "Assets/_Project/Art/AI/Cards/card_dragon_banner.png", () =>
+            {
+                var card = new CardPayload();
+                card.effects.Add(Effect(EffectType.DrawCard, TargetRule.Self, 1, 0, 0));
+                card.effects.Add(Effect(EffectType.GainMorale, TargetRule.Self, 2, 0, 0));
+                return card;
+            });
+            UpsertFixedCard(catalog, "card_shield_wall_order", "盾墙敕令", CardType.Tactic, CardRarity.Uncommon, 1, 2, CardReleaseRule.None, "大幅保护前线，并短暂压低敌方前线攻击。", "Assets/_Project/Art/AI/Cards/card_shield_wall_order.png", () =>
+            {
+                var card = new CardPayload();
+                card.effects.Add(Effect(EffectType.Shield, TargetRule.FriendlyFrontline, 34, 0, 99f));
+                card.effects.Add(Effect(EffectType.BuffAttack, TargetRule.EnemyFrontline, -0.18f, 4.5f, 99f));
+                return card;
+            });
+            UpsertFixedCard(catalog, "card_veteran_recruits", "老卒归营", CardType.Soldier, CardRarity.Uncommon, 1, 3, CardReleaseRule.PlayerSide, "召回一队香火民兵，并给全军补上一层薄盾。", "Assets/_Project/Art/AI/Cards/card_veteran_recruits.png", () =>
+            {
+                var card = new CardPayload();
+                card.spawns.Add(Spawn(militia, 6));
+                card.effects.Add(Effect(EffectType.Shield, TargetRule.AllFriendlyUnits, 10, 0, 99f));
+                return card;
+            });
+            UpsertFixedCard(catalog, "card_marshal_edict", "元帅敕命", CardType.EliteSoldier, CardRarity.Epic, 1, 5, CardReleaseRule.PlayerSide, "召来 3 名金甲天将，并短时间提升全军攻击。", "Assets/_Project/Art/AI/Cards/card_marshal_edict.png", () =>
+            {
+                var card = new CardPayload();
+                card.spawns.Add(Spawn(shieldGuard, 3));
+                card.effects.Add(Effect(EffectType.BuffAttack, TargetRule.AllFriendlyUnits, 0.20f, 6f, 99f));
+                return card;
+            });
+            UpsertFixedCard(catalog, "card_incense_engine", "香火机枢", CardType.Structure, CardRarity.Uncommon, 1, 3, CardReleaseRule.PlayerSide, "放置香火兵营并返还 1 点费用，帮助万灵召使更早铺开生产。", "Assets/_Project/Art/AI/Cards/card_incense_engine.png", () =>
+            {
+                var card = new CardPayload();
+                card.spawns.Add(Spawn(barracks, 1));
+                card.effects.Add(Effect(EffectType.GainMana, TargetRule.Self, 1, 0, 0));
+                return card;
+            });
+            UpsertFixedCard(catalog, "card_arrow_rain_altar", "雨箭灵坛", CardType.Structure, CardRarity.Rare, 1, 4, CardReleaseRule.PlayerSide, "放置灵弩坛，并对敌群落下一轮灵箭压制。", "Assets/_Project/Art/AI/Cards/card_arrow_rain_altar.png", () =>
+            {
+                var card = new CardPayload();
+                card.spawns.Add(Spawn(archerAltar, 1));
+                card.effects.Add(Effect(EffectType.AreaDamage, TargetRule.AllEnemies, 20, 0, 1.65f));
+                return card;
+            });
+            UpsertFixedCard(catalog, "card_spirit_reserves", "万灵后备", CardType.Economy, CardRarity.Uncommon, 1, 2, CardReleaseRule.None, "抽 1 张牌并回复费用，为下一轮铺场留资源。", "Assets/_Project/Art/AI/Cards/card_spirit_reserves.png", () =>
+            {
+                var card = new CardPayload();
+                card.effects.Add(Effect(EffectType.DrawCard, TargetRule.Self, 1, 0, 0));
+                card.effects.Add(Effect(EffectType.GainMana, TargetRule.Self, 2, 0, 0));
+                return card;
+            });
+            UpsertFixedCard(catalog, "card_lotus_guardian_array", "莲台守阵", CardType.Structure, CardRarity.Rare, 1, 4, CardReleaseRule.PlayerSide, "放置两道八卦石垒并为前线加盾，给生产建筑争取时间。", "Assets/_Project/Art/AI/Cards/card_lotus_guardian_array.png", () =>
+            {
+                var card = new CardPayload();
+                card.spawns.Add(Spawn(roadblock, 2));
+                card.effects.Add(Effect(EffectType.Shield, TargetRule.FriendlyFrontline, 28, 0, 99f));
+                return card;
+            });
+            UpsertFixedCard(catalog, "card_lightning_step", "雷遁步", CardType.Economy, CardRarity.Uncommon, 1, 0, CardReleaseRule.None, "抽 1 张牌并回复 1 点费用，压缩雷火方士的施法节奏。", "Assets/_Project/Art/AI/Cards/card_lightning_step.png", () =>
+            {
+                var card = new CardPayload();
+                card.effects.Add(Effect(EffectType.DrawCard, TargetRule.Self, 1, 0, 0));
+                card.effects.Add(Effect(EffectType.GainMana, TargetRule.Self, 1, 0, 0));
+                return card;
+            });
+            UpsertFixedCard(catalog, "card_thunder_prison", "雷牢符", CardType.Debuff, CardRarity.Rare, 1, 3, CardReleaseRule.Anywhere, "在目标点降下雷牢，定身并减速敌群。", "Assets/_Project/Art/AI/Cards/card_thunder_prison.png", () =>
+            {
+                var card = new CardPayload();
+                card.effects.Add(Effect(EffectType.Stun, TargetRule.AllEnemies, 1f, 0.8f, 1.75f));
+                card.effects.Add(Effect(EffectType.Slow, TargetRule.AllEnemies, 0.38f, 4.5f, 1.95f));
+                return card;
+            });
+            UpsertFixedCard(catalog, "card_flame_wheel", "风火轮", CardType.Spell, CardRarity.Rare, 1, 3, CardReleaseRule.Anywhere, "击退目标点附近敌人，并造成一圈火焰伤害。", "Assets/_Project/Art/AI/Cards/card_flame_wheel.png", () =>
+            {
+                var card = new CardPayload();
+                card.effects.Add(Effect(EffectType.AreaDamage, TargetRule.AllEnemies, 32, 0, 1.6f));
+                card.effects.Add(Effect(EffectType.Knockback, TargetRule.AllEnemies, 0.9f, 0, 1.6f));
+                return card;
+            });
+            UpsertFixedCard(catalog, "card_heaven_bolt", "天罚雷矛", CardType.Spell, CardRarity.Epic, 1, 5, CardReleaseRule.Anywhere, "对目标区域造成高额雷击，并短暂定身残存敌人。", "Assets/_Project/Art/AI/Cards/card_heaven_bolt.png", () =>
+            {
+                var card = new CardPayload();
+                card.effects.Add(Effect(EffectType.Damage, TargetRule.AllEnemies, 72, 0, 1.3f));
+                card.effects.Add(Effect(EffectType.Stun, TargetRule.AllEnemies, 1f, 0.45f, 1.3f));
+                return card;
+            });
+            UpsertFixedCard(catalog, "card_demon_snare", "缚魔网", CardType.Debuff, CardRarity.Uncommon, 1, 2, CardReleaseRule.Anywhere, "持续减速并毒蚀目标点敌人，短暂打断推进。", "Assets/_Project/Art/AI/Cards/card_demon_snare.png", () =>
+            {
+                var card = new CardPayload();
+                card.effects.Add(Effect(EffectType.Slow, TargetRule.AllEnemies, 0.38f, 7.5f, 1.95f));
+                card.effects.Add(Effect(EffectType.Stun, TargetRule.AllEnemies, 1f, 0.65f, 1.55f));
+                card.effects.Add(Effect(EffectType.Poison, TargetRule.AllEnemies, 3.5f, 6.0f, 1.95f));
+                return card;
+            });
+            UpsertFixedCard(catalog, "card_venom_seal", "蚀骨毒符", CardType.Debuff, CardRarity.Uncommon, 1, 2, CardReleaseRule.Anywhere, "给敌群施加毒蚀，并削弱前线攻击。", "Assets/_Project/Art/AI/Cards/card_venom_seal.png", () =>
+            {
+                var card = new CardPayload();
+                card.effects.Add(Effect(EffectType.Poison, TargetRule.AllEnemies, 6.5f, 7.5f, 1.95f));
+                card.effects.Add(Effect(EffectType.Slow, TargetRule.AllEnemies, 0.28f, 5.0f, 1.95f));
+                card.effects.Add(Effect(EffectType.BuffAttack, TargetRule.EnemyFrontline, -0.22f, 6f, 99f));
+                return card;
+            });
+            UpsertFixedCard(catalog, "card_karmic_tax", "业债索偿", CardType.Economy, CardRarity.Rare, 1, 1, CardReleaseRule.None, "获得金币并抽牌，让镇妖符师把拖延时间转化为资源。", "Assets/_Project/Art/AI/Cards/card_karmic_tax.png", () =>
+            {
+                var card = new CardPayload();
+                card.effects.Add(Effect(EffectType.GainGold, TargetRule.Self, 24, 0, 0));
+                card.effects.Add(Effect(EffectType.DrawCard, TargetRule.Self, 2, 0, 0));
+                return card;
+            });
+            UpsertFixedCard(catalog, "card_soul_lock", "锁魂镇牌", CardType.Debuff, CardRarity.Epic, 1, 4, CardReleaseRule.Anywhere, "重度压制目标点敌群，叠加长效毒蚀、定身和攻击削弱。", "Assets/_Project/Art/AI/Cards/card_soul_lock.png", () =>
+            {
+                var card = new CardPayload();
+                card.effects.Add(Effect(EffectType.Poison, TargetRule.AllEnemies, 10f, 8.0f, 2.25f));
+                card.effects.Add(Effect(EffectType.Slow, TargetRule.AllEnemies, 0.45f, 8.0f, 2.25f));
+                card.effects.Add(Effect(EffectType.Stun, TargetRule.AllEnemies, 1f, 1.05f, 1.95f));
+                card.effects.Add(Effect(EffectType.BuffAttack, TargetRule.EnemyFrontline, -0.38f, 8.0f, 99f));
                 return card;
             });
             UpsertCurseCard(catalog, "card_curse_karmic_fire", "业火缠身", "拖进战场时会灼伤我方基地。", "Assets/_Project/Art/AI/Cards/card_curse_karmic_fire.png");
@@ -438,10 +555,7 @@ namespace XTD.Content
             var sharedUtility = new[]
             {
                 "card_roadblock",
-                "card_healing_rain",
-                "card_cloud_banner",
-                "card_treasure_talisman",
-                "card_mountain_seal"
+                "card_healing_rain"
             };
 
             return new[]
@@ -457,12 +571,14 @@ namespace XTD.Content
                     25,
                     100f,
                     CardCopies(
-                        ("card_incense_barracks", 2),
-                        ("card_spirit_arrow_altar", 2),
-                        ("card_roadblock", 1),
+                        ("card_incense_barracks", 1),
+                        ("card_spirit_arrow_altar", 1),
                         ("card_heaven_soldier_talisman", 2),
-                        ("card_fireball", 1),
-                        ("card_rally", 1)),
+                        ("card_heaven_general_order", 1),
+                        ("card_rally", 2),
+                        ("card_frontier_phalanx", 1),
+                        ("card_general_vanguard", 1),
+                        ("card_golden_barrier", 1)),
                     sharedUtility,
                     new[]
                     {
@@ -470,11 +586,15 @@ namespace XTD.Content
                         "card_spirit_arrow_altar",
                         "card_heaven_soldier_talisman",
                         "card_heaven_general_order",
+                        "card_frontier_phalanx",
+                        "card_general_vanguard",
+                        "card_dragon_banner",
+                        "card_shield_wall_order",
+                        "card_veteran_recruits",
+                        "card_marshal_edict",
                         "card_monkey_hero",
-                        "card_fireball",
                         "card_rally",
                         "card_golden_barrier",
-                        "card_break_formation",
                         "card_star_river_decree",
                         "card_nezha_order"
                     },
@@ -503,21 +623,25 @@ namespace XTD.Content
                         ("card_spirit_arrow_altar", 2),
                         ("card_thunder_drum_tower", 1),
                         ("card_roadblock", 1),
-                        ("card_heaven_soldier_talisman", 1),
-                        ("card_golden_barrier", 1),
-                        ("card_rally", 1)),
+                        ("card_spirit_gate", 1),
+                        ("card_ten_thousand_muster", 1),
+                        ("card_heavenly_workshop", 1)),
                     sharedUtility,
                     new[]
                     {
                         "card_incense_barracks",
                         "card_spirit_arrow_altar",
                         "card_thunder_drum_tower",
+                        "card_spirit_gate",
+                        "card_ten_thousand_muster",
+                        "card_incense_engine",
+                        "card_arrow_rain_altar",
+                        "card_spirit_reserves",
+                        "card_lotus_guardian_array",
                         "card_heaven_soldier_talisman",
-                        "card_heaven_general_order",
                         "card_monkey_hero",
                         "card_rally",
                         "card_golden_barrier",
-                        "card_nezha_order",
                         "card_heavenly_workshop"
                     },
                     definition =>
@@ -545,10 +669,10 @@ namespace XTD.Content
                     92f,
                     CardCopies(
                         ("card_incense_barracks", 1),
-                        ("card_spirit_arrow_altar", 1),
-                        ("card_roadblock", 1),
                         ("card_fireball", 2),
                         ("card_thunder_talisman", 2),
+                        ("card_thunder_chain", 1),
+                        ("card_samadhi_inferno", 1),
                         ("card_binding_talisman", 1),
                         ("card_mountain_seal", 1),
                         ("card_cloud_banner", 1)),
@@ -556,13 +680,18 @@ namespace XTD.Content
                     new[]
                     {
                         "card_incense_barracks",
-                        "card_spirit_arrow_altar",
-                        "card_heaven_general_order",
                         "card_fireball",
                         "card_thunder_talisman",
+                        "card_thunder_chain",
+                        "card_samadhi_inferno",
+                        "card_lightning_step",
+                        "card_thunder_prison",
+                        "card_flame_wheel",
+                        "card_heaven_bolt",
                         "card_binding_talisman",
                         "card_poison_gourd",
-                        "card_break_formation",
+                        "card_mountain_seal",
+                        "card_cloud_banner",
                         "card_star_river_decree",
                         "card_pangu_spark"
                     },
@@ -595,41 +724,41 @@ namespace XTD.Content
                     96f,
                     CardCopies(
                         ("card_incense_barracks", 1),
-                        ("card_spirit_arrow_altar", 1),
                         ("card_roadblock", 1),
-                        ("card_heaven_soldier_talisman", 1),
                         ("card_binding_talisman", 2),
                         ("card_poison_gourd", 1),
+                        ("card_seal_array", 1),
+                        ("card_venom_seal", 1),
                         ("card_break_formation", 1),
-                        ("card_mountain_seal", 1),
-                        ("card_treasure_talisman", 1),
+                        ("card_karmic_conversion", 1),
                         ("card_healing_rain", 1)),
                     sharedUtility,
                     new[]
                     {
                         "card_incense_barracks",
-                        "card_spirit_arrow_altar",
-                        "card_heaven_soldier_talisman",
-                        "card_heaven_general_order",
                         "card_binding_talisman",
                         "card_poison_gourd",
+                        "card_seal_array",
                         "card_break_formation",
-                        "card_fireball",
-                        "card_thunder_talisman",
-                        "card_golden_barrier",
-                        "card_star_river_decree",
-                        "card_pangu_spark"
+                        "card_karmic_conversion",
+                        "card_demon_snare",
+                        "card_venom_seal",
+                        "card_karmic_tax",
+                        "card_soul_lock",
+                        "card_treasure_talisman",
+                        "card_mountain_seal",
+                        "card_star_river_decree"
                     },
                     definition =>
                     {
                         definition.extraCommand = -1;
                         definition.extraStartingMana = 1f;
-                        definition.spellDamageBonus = 0.06f;
+                        definition.spellDamageBonus = 0.08f;
                         definition.structureProductionIntervalMultiplier = 1.04f;
-                        definition.manaRegenMultiplier = 1.04f;
-                        definition.effectRadiusMultiplier = 1.18f;
-                        definition.cardTypeModifiers.Add(Modifier(CardType.Debuff, -1, 1.75f));
-                        definition.cardTypeModifiers.Add(Modifier(CardType.Economy, -1, 1.25f));
+                        definition.manaRegenMultiplier = 1.08f;
+                        definition.effectRadiusMultiplier = 1.30f;
+                        definition.cardTypeModifiers.Add(Modifier(CardType.Debuff, -1, 1.95f));
+                        definition.cardTypeModifiers.Add(Modifier(CardType.Economy, -1, 1.35f));
                         definition.cardTypeModifiers.Add(Modifier(CardType.Spell, rewardWeight: 1.10f));
                         definition.cardTypeModifiers.Add(Modifier(CardType.Structure, 1, 0.78f));
                         definition.cardTypeModifiers.Add(Modifier(CardType.Soldier, rewardWeight: 0.85f));

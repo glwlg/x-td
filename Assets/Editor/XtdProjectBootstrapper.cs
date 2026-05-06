@@ -29,6 +29,8 @@ namespace XTD.Editor
         private const string AiUiRoot = AiArtRoot + "/UI";
         private const string AiNodeIconRoot = AiUiRoot + "/Nodes";
         private const string AiArtifactIconRoot = AiUiRoot + "/Artifacts";
+        private const string AiEventUiRoot = AiUiRoot + "/Events";
+        private const string AiArtifactSelectUiRoot = AiUiRoot + "/ArtifactSelect";
         private const string SettingsRoot = ProjectRoot + "/Settings";
         private const string ResourcesRoot = "Assets/Resources";
         private const string ResourcesAiArtRoot = ResourcesRoot + "/Art/AI";
@@ -118,12 +120,16 @@ namespace XTD.Editor
             Directory.CreateDirectory(AiUiRoot);
             Directory.CreateDirectory(AiNodeIconRoot);
             Directory.CreateDirectory(AiArtifactIconRoot);
+            Directory.CreateDirectory(AiEventUiRoot);
+            Directory.CreateDirectory(AiArtifactSelectUiRoot);
             Directory.CreateDirectory(ResourcesAiArtRoot);
             Directory.CreateDirectory(ResourcesAiArtRoot + "/Backgrounds");
             Directory.CreateDirectory(ResourcesAiArtRoot + "/Battle");
             Directory.CreateDirectory(ResourcesAiArtRoot + "/Cards");
             Directory.CreateDirectory(ResourcesAiArtRoot + "/FX");
             Directory.CreateDirectory(ResourcesAiArtRoot + "/UI");
+            Directory.CreateDirectory(ResourcesAiArtRoot + "/UI/Events");
+            Directory.CreateDirectory(ResourcesAiArtRoot + "/UI/ArtifactSelect");
         }
 
         private static ContentCatalog CreateCatalogAsset()
@@ -218,6 +224,10 @@ namespace XTD.Editor
             SetArtifactIcon(catalog, "artifact_star_sand", LoadAiArtifactSprite("artifact_star_sand"));
             SetArtifactIcon(catalog, "artifact_battle_scripture", LoadAiArtifactSprite("artifact_battle_scripture"));
             SetArtifactIcon(catalog, "artifact_vajra", LoadAiArtifactSprite("artifact_vajra"));
+            SetArtifactIcon(catalog, "artifact_ten_thousand_banner", LoadAiArtifactSprite("artifact_ten_thousand_banner"));
+            SetArtifactIcon(catalog, "artifact_thunder_fire_box", LoadAiArtifactSprite("artifact_thunder_fire_box"));
+            SetArtifactIcon(catalog, "artifact_general_platform", LoadAiArtifactSprite("artifact_general_platform"));
+            SetArtifactIcon(catalog, "artifact_curse_gourd", LoadAiArtifactSprite("artifact_curse_gourd"));
             SetArtifactIcon(catalog, "artifact_permanent_relic", LoadAiArtifactSprite("artifact_permanent_relic"));
         }
 
@@ -254,6 +264,8 @@ namespace XTD.Editor
             CopyPngFolder(AiBattleRoot, ResourcesAiArtRoot + "/Battle");
             CopyPngFolder(AiCardsRoot, ResourcesAiArtRoot + "/Cards");
             CopyPngFolder(AiFxRoot, ResourcesAiArtRoot + "/FX");
+            CopyPngFolder(AiEventUiRoot, ResourcesAiArtRoot + "/UI/Events");
+            CopyPngFolder(AiArtifactSelectUiRoot, ResourcesAiArtRoot + "/UI/ArtifactSelect");
         }
 
         private static void CopyPngFolder(string sourceRoot, string targetRoot)

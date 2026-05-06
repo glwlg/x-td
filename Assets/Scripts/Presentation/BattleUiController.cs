@@ -576,13 +576,13 @@ namespace XTD.Presentation
                 root,
                 new Vector2(0.5f, 1f),
                 new Vector2(0.5f, 1f),
-                new Vector2(0f, -54f),
-                new Vector2(940f, 64f),
+                new Vector2(0f, -34f),
+                new Vector2(900f, 52f),
                 new Color(0.015f, 0.018f, 0.024f, 0.62f));
             bossPanel.gameObject.AddComponent<Outline>().effectColor = new Color(0.90f, 0.42f, 0.30f, 0.50f);
 
-            bossNameText = CreateText("首领名称", bossPanel.transform, new Vector2(0.5f, 0.72f), new Vector2(0.5f, 0.72f), Vector2.zero, 23);
-            bossNameText.rectTransform.sizeDelta = new Vector2(860f, 26f);
+            bossNameText = CreateText("首领名称", bossPanel.transform, new Vector2(0.5f, 0.73f), new Vector2(0.5f, 0.73f), Vector2.zero, 21);
+            bossNameText.rectTransform.sizeDelta = new Vector2(820f, 24f);
             bossNameText.color = new Color(1f, 0.92f, 0.72f, 0.98f);
 
             var barBack = CreatePanel(
@@ -591,7 +591,7 @@ namespace XTD.Presentation
                 new Vector2(0.5f, 0.28f),
                 new Vector2(0.5f, 0.28f),
                 Vector2.zero,
-                new Vector2(820f, 18f),
+                new Vector2(780f, 15f),
                 new Color(0.10f, 0.02f, 0.018f, 0.86f));
             barBack.raycastTarget = false;
 
@@ -601,8 +601,8 @@ namespace XTD.Presentation
             bossHpFill.rectTransform.pivot = new Vector2(0f, 0.5f);
             bossHpFill.raycastTarget = false;
 
-            bossHpText = CreateText("首领血量文字", bossPanel.transform, new Vector2(0.5f, 0.28f), new Vector2(0.5f, 0.28f), Vector2.zero, 17);
-            bossHpText.rectTransform.sizeDelta = new Vector2(280f, 24f);
+            bossHpText = CreateText("首领血量文字", bossPanel.transform, new Vector2(0.5f, 0.28f), new Vector2(0.5f, 0.28f), Vector2.zero, 16);
+            bossHpText.rectTransform.sizeDelta = new Vector2(260f, 22f);
             bossHpText.color = new Color(1f, 0.94f, 0.86f, 0.95f);
         }
 

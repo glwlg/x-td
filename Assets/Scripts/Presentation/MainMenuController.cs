@@ -1292,6 +1292,158 @@ namespace XTD.Presentation
             return button;
         }
 
+        private Button CreateEventChoiceCard(
+            OpportunityEventPreview preview,
+            string headerTag,
+            string actionText,
+            Sprite art,
+            Transform parent,
+            Vector2 anchor,
+            Vector2 size,
+            Vector2 offset,
+            Color fill,
+            Color accent)
+        {
+            var button = CreateButton(string.Empty, parent, anchor, size, offset);
+            var image = button.GetComponent<Image>();
+            image.color = fill;
+
+            var outline = button.gameObject.AddComponent<Outline>();
+            outline.effectColor = accent;
+            outline.effectDistance = new Vector2(2f, -2f);
+
+            var label = button.GetComponentInChildren<Text>();
+            if (label != null)
+            {
+                label.text = string.Empty;
+            }
+
+            AddClassCardFrame(button.transform, size - new Vector2(10f, 10f), accent, false);
+
+            var artPanel = CreatePanel("事件插画底", button.transform, new Vector2(0.5f, 0.68f), new Vector2(0.5f, 0.68f), Vector2.zero, new Vector2(size.x - 44f, size.y * 0.34f), new Color(0.010f, 0.020f, 0.024f, 0.50f));
+            artPanel.raycastTarget = false;
+            artPanel.gameObject.AddComponent<RectMask2D>();
+            var artImage = AddSpriteIcon(artPanel.transform, art, Vector2.zero, artPanel.rectTransform.sizeDelta);
+            if (artImage != null)
+            {
+                artImage.preserveAspect = false;
+                FitSpriteToCover(artImage.rectTransform, artPanel.rectTransform.sizeDelta.x, artPanel.rectTransform.sizeDelta.y, art);
+            }
+
+            var topBand = CreatePanel("事件标题带", button.transform, new Vector2(0.5f, 0.91f), new Vector2(0.5f, 0.91f), Vector2.zero, new Vector2(size.x - 58f, 30f), new Color(0.012f, 0.022f, 0.026f, 0.68f));
+            topBand.raycastTarget = false;
+            var topTag = CreateText("事件类型", topBand.transform, new Vector2(0.16f, 0.5f), new Vector2(88f, 24f), 16, TextAnchor.MiddleCenter);
+            topTag.text = headerTag;
+            topTag.color = new Color(0.76f, 0.94f, 0.90f, 0.96f);
+            topTag.raycastTarget = false;
+
+            var badge = CreatePanel("事件风险标", topBand.transform, new Vector2(0.78f, 0.5f), new Vector2(0.78f, 0.5f), Vector2.zero, new Vector2(100f, 22f), WithAlpha(accent, 0.28f));
+            badge.raycastTarget = false;
+            var badgeText = CreateText("事件风险字", badge.transform, new Vector2(0.5f, 0.5f), new Vector2(94f, 20f), 14, TextAnchor.MiddleCenter);
+            badgeText.text = RiskBadgeText(preview.risk);
+            badgeText.color = new Color(0.94f, 0.98f, 0.96f, 0.94f);
+            badgeText.raycastTarget = false;
+
+            var name = CreateText("事件名称", button.transform, new Vector2(0.5f, 0.455f), new Vector2(size.x - 58f, 42f), 27, TextAnchor.MiddleCenter);
+            name.text = preview.title;
+            name.color = new Color(0.95f, 0.88f, 0.66f, 0.98f);
+            name.raycastTarget = false;
+            AddTextShadow(name, new Color(0f, 0f, 0f, 0.88f), new Vector2(1.2f, -1.2f));
+
+            var story = CreateText("事件叙事", button.transform, new Vector2(0.5f, 0.345f), new Vector2(size.x - 58f, 54f), 16, TextAnchor.MiddleCenter);
+            story.text = preview.story;
+            story.color = new Color(0.88f, 0.94f, 0.92f, 0.92f);
+            story.raycastTarget = false;
+
+            AddEventInfoStrip(button.transform, "收益", preview.reward, new Vector2(0f, -104f), new Vector2(size.x - 66f, 34f), new Color(0.24f, 0.72f, 0.56f, 0.22f));
+            AddEventInfoStrip(button.transform, "风险", preview.risk, new Vector2(0f, -142f), new Vector2(size.x - 66f, 34f), new Color(0.82f, 0.36f, 0.32f, 0.18f));
+
+            var actionBand = CreatePanel("事件操作带", button.transform, new Vector2(0.5f, 0.035f), new Vector2(0.5f, 0.035f), Vector2.zero, new Vector2(size.x - 74f, 30f), new Color(0.018f, 0.034f, 0.036f, 0.70f));
+            actionBand.raycastTarget = false;
+            var action = CreateText("事件操作文字", actionBand.transform, new Vector2(0.5f, 0.5f), new Vector2(size.x - 84f, 22f), 16, TextAnchor.MiddleCenter);
+            action.text = actionText;
+            action.color = new Color(0.62f, 0.96f, 0.90f, 0.96f);
+            action.raycastTarget = false;
+
+            return button;
+        }
+
+        private static void AddEventInfoStrip(Transform parent, string label, string value, Vector2 position, Vector2 size, Color color)
+        {
+            var strip = CreatePanel("事件信息条", parent, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), position, size, color);
+            strip.raycastTarget = false;
+            var labelText = CreateText("事件信息标签", strip.transform, new Vector2(0.13f, 0.5f), new Vector2(48f, size.y - 8f), 14, TextAnchor.MiddleCenter);
+            labelText.text = label;
+            labelText.color = new Color(0.78f, 0.94f, 0.88f, 0.92f);
+            labelText.raycastTarget = false;
+
+            var valueText = CreateText("事件信息内容", strip.transform, new Vector2(0.60f, 0.5f), new Vector2(size.x - 74f, size.y - 8f), 14, TextAnchor.MiddleLeft);
+            valueText.text = value;
+            valueText.color = new Color(0.92f, 0.96f, 0.94f, 0.94f);
+            valueText.raycastTarget = false;
+        }
+
+        private static string RiskBadgeText(string risk)
+        {
+            if (string.IsNullOrWhiteSpace(risk) || risk.Contains("无直接风险", StringComparison.Ordinal))
+            {
+                return "低风险";
+            }
+
+            return risk.Contains("惩罚", StringComparison.Ordinal) || risk.Contains("诅咒", StringComparison.Ordinal) || risk.Contains("失去", StringComparison.Ordinal)
+                ? "高风险"
+                : "小风险";
+        }
+
+        private static string MysteryActionText(int templateIndex)
+        {
+            return templateIndex switch
+            {
+                0 => "稳妥探查",
+                1 => "深入凶阵",
+                _ => "献祭换宝"
+            };
+        }
+
+        private static Sprite OpportunityEventArt(int templateIndex)
+        {
+            var fileName = templateIndex switch
+            {
+                0 => "event_opportunity_caravan",
+                1 => "event_opportunity_talisman",
+                2 => "event_opportunity_forge",
+                3 => "event_opportunity_lotus_spring",
+                4 => "event_opportunity_demon_market",
+                _ => "event_opportunity_star_scroll"
+            };
+
+            return LoadEventUiSprite(fileName) ?? LoadNodeSprite(MapNodeType.Opportunity);
+        }
+
+        private static Sprite MysteryEventArt(int templateIndex)
+        {
+            var fileName = templateIndex switch
+            {
+                0 => "event_mystery_scout",
+                1 => "event_mystery_array",
+                _ => "event_mystery_sacrifice"
+            };
+
+            return LoadEventUiSprite(fileName) ?? LoadNodeSprite(MapNodeType.Mystery);
+        }
+
+        private static Sprite ArtifactCardFrameSprite(ArtifactRarity rarity)
+        {
+            var fileName = rarity switch
+            {
+                ArtifactRarity.Common => "artifact_select_card_common",
+                ArtifactRarity.Legendary => "artifact_select_card_legendary",
+                _ => "artifact_select_card_rare"
+            };
+
+            return LoadArtifactSelectUiSprite(fileName);
+        }
+
         private static void FitSpriteToCover(RectTransform rect, float frameWidth, float frameHeight, Sprite sprite)
         {
             if (rect == null)
@@ -1353,6 +1505,8 @@ namespace XTD.Presentation
             {
                 var title = CreateText("节点标题", uiRoot.transform, new Vector2(0.5f, 0.77f), new Vector2(900f, 72f), 36, TextAnchor.MiddleCenter);
                 title.text = $"{GameFlowController.NodeTypeName(node.NodeType)}";
+                title.color = new Color(0.84f, 1f, 0.96f, 0.98f);
+                AddTextShadow(title, new Color(0f, 0f, 0f, 0.88f), new Vector2(1.5f, -1.5f));
             }
 
             switch (node.NodeType)
@@ -1549,7 +1703,7 @@ namespace XTD.Presentation
                 "休整",
                 "恢复 10% - 30% 生命。若持有太极图残卷，恢复幅度还会更高。",
                 "静坐疗伤",
-                LoadNodeSprite(MapNodeType.Rest),
+                LoadEventUiSprite("event_opportunity_lotus_spring") ?? LoadNodeSprite(MapNodeType.Rest),
                 uiRoot.transform,
                 new Vector2(0.5f, 0.52f),
                 new Vector2(260f, 300f),
@@ -1605,16 +1759,31 @@ namespace XTD.Presentation
 
         private void BuildOpportunityChoicesPanel()
         {
-            var info = CreateText("机遇说明", uiRoot.transform, new Vector2(0.5f, 0.68f), new Vector2(980f, 56f), 22, TextAnchor.MiddleCenter);
+            var info = CreateText("机遇说明", uiRoot.transform, new Vector2(0.5f, 0.69f), new Vector2(980f, 56f), 22, TextAnchor.MiddleCenter);
             info.text = "选择一个机遇处理方式。机遇偏收益，风险通常较小。";
+            info.color = new Color(0.86f, 0.94f, 0.92f, 0.94f);
+
+            var stage = CreatePanel("机遇选择舞台", uiRoot.transform, new Vector2(0.5f, 0.43f), new Vector2(0.5f, 0.43f), Vector2.zero, new Vector2(1060f, 430f), new Color(0f, 0f, 0f, 0.035f));
+            stage.raycastTarget = false;
+            AddHorizontalOrnament(stage.transform, new Vector2(0f, 214f), 860f, new Color(0.58f, 0.42f, 0.24f, 0.36f));
+            AddHorizontalOrnament(stage.transform, new Vector2(0f, -214f), 860f, new Color(0.36f, 0.76f, 0.70f, 0.26f));
 
             var options = flow.GenerateOpportunityOptions();
-            var startX = -((options.Count - 1) * 295f) * 0.5f;
+            var startX = -((options.Count - 1) * 330f) * 0.5f;
             for (var i = 0; i < options.Count; i++)
             {
                 var preview = options[i];
-                var label = $"{preview.title}\n{preview.story}\n收益：{preview.reward}\n风险：{preview.risk}";
-                var button = CreateButton(label, uiRoot.transform, new Vector2(0.5f, 0.48f), new Vector2(280f, 190f), new Vector2(startX + i * 295f, 0f));
+                var button = CreateEventChoiceCard(
+                    preview,
+                    "机遇",
+                    "接受机遇",
+                    OpportunityEventArt(preview.templateIndex),
+                    uiRoot.transform,
+                    new Vector2(0.5f, 0.43f),
+                    new Vector2(302f, 386f),
+                    new Vector2(startX + i * 330f, 0f),
+                    new Color(0.035f, 0.082f, 0.092f, 0.88f),
+                    new Color(0.42f, 0.86f, 0.78f, 0.58f));
                 button.onClick.AddListener(() =>
                 {
                     flow.ChooseOpportunity(preview.templateIndex);
@@ -1625,19 +1794,32 @@ namespace XTD.Presentation
 
         private void BuildMysteryPanel()
         {
-            var info = CreateText("神秘说明", uiRoot.transform, new Vector2(0.5f, 0.68f), new Vector2(1020f, 56f), 22, TextAnchor.MiddleCenter);
+            var info = CreateText("神秘说明", uiRoot.transform, new Vector2(0.5f, 0.69f), new Vector2(1020f, 56f), 22, TextAnchor.MiddleCenter);
             info.text = "神秘房间会给更高收益，也可能带来惩罚战或诅咒。";
+            info.color = new Color(0.90f, 0.88f, 0.96f, 0.94f);
+
+            var stage = CreatePanel("神秘选择舞台", uiRoot.transform, new Vector2(0.5f, 0.43f), new Vector2(0.5f, 0.43f), Vector2.zero, new Vector2(1080f, 440f), new Color(0f, 0f, 0f, 0.050f));
+            stage.raycastTarget = false;
+            AddHorizontalOrnament(stage.transform, new Vector2(0f, 218f), 880f, new Color(0.62f, 0.32f, 0.72f, 0.34f));
+            AddHorizontalOrnament(stage.transform, new Vector2(0f, -218f), 880f, new Color(0.72f, 0.28f, 0.30f, 0.28f));
 
             var options = flow.GenerateMysteryOptions();
-            var startX = -((options.Count - 1) * 315f) * 0.5f;
+            var startX = -((options.Count - 1) * 338f) * 0.5f;
             for (var i = 0; i < options.Count; i++)
             {
                 var preview = options[i];
-                var label = $"{preview.title}\n{preview.story}\n收益：{preview.reward}\n风险：{preview.risk}";
-                var button = CreateButton(label, uiRoot.transform, new Vector2(0.5f, 0.48f), new Vector2(300f, 205f), new Vector2(startX + i * 315f, 0f));
-                button.GetComponent<Image>().color = preview.templateIndex == 1
-                    ? new Color(0.34f, 0.10f, 0.10f, 0.96f)
-                    : new Color(0.18f, 0.15f, 0.25f, 0.96f);
+                var highRisk = preview.templateIndex != 0;
+                var button = CreateEventChoiceCard(
+                    preview,
+                    "神秘",
+                    MysteryActionText(preview.templateIndex),
+                    MysteryEventArt(preview.templateIndex),
+                    uiRoot.transform,
+                    new Vector2(0.5f, 0.43f),
+                    new Vector2(312f, 398f),
+                    new Vector2(startX + i * 338f, 0f),
+                    highRisk ? new Color(0.12f, 0.042f, 0.060f, 0.90f) : new Color(0.050f, 0.060f, 0.095f, 0.88f),
+                    highRisk ? new Color(0.90f, 0.36f, 0.40f, 0.62f) : new Color(0.54f, 0.72f, 1f, 0.56f));
                 button.onClick.AddListener(() =>
                 {
                     flow.ChooseMystery(preview.templateIndex);
@@ -1651,20 +1833,31 @@ namespace XTD.Presentation
 
         private void BuildArtifactPanel()
         {
-            var title = CreateText("强化标题", uiRoot.transform, new Vector2(0.5f, 0.79f), new Vector2(920f, 82f), 54, TextAnchor.MiddleCenter);
-            title.text = "选择一个强化";
-            title.color = new Color(0.84f, 1f, 0.96f, 0.98f);
+            var titleSprite = LoadArtifactSelectUiSprite("artifact_select_title_art");
+            if (titleSprite != null)
+            {
+                var titleArt = AddSpriteFrame(uiRoot.transform, titleSprite, new Vector2(0f, 248f), new Vector2(500f, 142f));
+                titleArt.rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
+                titleArt.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+                titleArt.color = new Color(1f, 1f, 1f, 0.96f);
+            }
+            else
+            {
+                var title = CreateText("强化标题", uiRoot.transform, new Vector2(0.5f, 0.79f), new Vector2(920f, 82f), 54, TextAnchor.MiddleCenter);
+                title.text = "选择一个强化";
+                title.color = new Color(0.92f, 0.86f, 0.60f, 0.98f);
 
-            var info = CreateText("神器说明", uiRoot.transform, new Vector2(0.5f, 0.715f), new Vector2(1020f, 46f), 22, TextAnchor.MiddleCenter);
-            info.text = "强化会立刻加入本局，改变战斗、经济或构筑节奏。";
-            info.color = new Color(0.86f, 0.94f, 0.92f, 0.94f);
+                var info = CreateText("神器说明", uiRoot.transform, new Vector2(0.5f, 0.715f), new Vector2(1020f, 46f), 22, TextAnchor.MiddleCenter);
+                info.text = "强化会立刻加入本局，改变战斗、经济或构筑节奏。";
+                info.color = new Color(0.90f, 0.88f, 0.72f, 0.94f);
+            }
 
             var choices = flow.GenerateArtifactChoices();
-            var startX = -((choices.Count - 1) * 390f) * 0.5f;
+            var startX = -((choices.Count - 1) * 392f) * 0.5f;
             for (var i = 0; i < choices.Count; i++)
             {
                 var artifact = choices[i];
-                var button = CreateArtifactChoiceCard(artifact, new Vector2(startX + i * 390f, 0f));
+                var button = CreateArtifactChoiceCard(artifact, new Vector2(startX + i * 392f, -42f));
                 button.onClick.AddListener(() =>
                 {
                     flow.ChooseArtifact(artifact);
@@ -1672,29 +1865,53 @@ namespace XTD.Presentation
                 });
             }
 
-            var refresh = CreateButton($"刷新\n{flow.ArtifactRerollCost} 金币", uiRoot.transform, new Vector2(0.5f, 0.16f), new Vector2(320f, 72f));
-            refresh.GetComponent<Image>().color = flow.ArtifactRefreshesRemaining > 0 && flow.CurrentRun.gold >= flow.ArtifactRerollCost
-                ? new Color(0.05f, 0.20f, 0.22f, 0.94f)
-                : new Color(0.08f, 0.08f, 0.08f, 0.70f);
-            refresh.interactable = flow.ArtifactRefreshesRemaining > 0;
+            var canRefresh = flow.ArtifactRefreshesRemaining > 0 && flow.CurrentRun.gold >= flow.ArtifactRerollCost;
+            var refresh = CreateArtifactSelectButton($"刷新\n{flow.ArtifactRerollCost} 金币", new Vector2(0f, -424f), new Vector2(392f, 94f), "artifact_select_refresh_button", canRefresh);
+            refresh.interactable = canRefresh;
             refresh.onClick.AddListener(() =>
             {
                 flow.RerollArtifactChoices();
                 BuildUi();
             });
 
-            var remaining = CreateText("刷新次数", uiRoot.transform, new Vector2(0.80f, 0.16f), new Vector2(260f, 42f), 20, TextAnchor.MiddleLeft);
+            var remainingPanel = CreatePanel("神器刷新次数底", uiRoot.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(470f, -424f), new Vector2(228f, 62f), new Color(0f, 0f, 0f, 0.01f));
+            remainingPanel.raycastTarget = false;
+            var badgeSprite = LoadArtifactSelectUiSprite("artifact_select_remaining_badge");
+            if (badgeSprite != null)
+            {
+                AddSpriteFrame(remainingPanel.transform, badgeSprite, Vector2.zero, new Vector2(240f, 70f));
+            }
+            else
+            {
+                remainingPanel.color = new Color(0.018f, 0.020f, 0.020f, 0.74f);
+                remainingPanel.gameObject.AddComponent<Outline>().effectColor = new Color(0.78f, 0.58f, 0.34f, 0.55f);
+            }
+
+            var remaining = CreateText("刷新次数", remainingPanel.transform, new Vector2(0.5f, 0.5f), new Vector2(194f, 38f), 19, TextAnchor.MiddleCenter);
             remaining.text = $"剩余次数：{flow.ArtifactRefreshesRemaining}";
-            remaining.color = new Color(0.84f, 0.94f, 0.92f, 0.92f);
+            remaining.color = new Color(0.94f, 0.84f, 0.58f, 0.96f);
+            AddTextShadow(remaining, new Color(0f, 0f, 0f, 0.82f), new Vector2(1f, -1f));
         }
 
         private void BuildHeader()
         {
             var run = flow.CurrentRun;
-            var panel = CreatePanel("顶部信息栏", uiRoot.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -42f), new Vector2(1720f, 72f), new Color(0.015f, 0.018f, 0.022f, 0.80f));
-            panel.gameObject.AddComponent<Outline>().effectColor = new Color(0.30f, 0.72f, 0.70f, 0.32f);
+            var panel = CreatePanel("顶部信息栏", uiRoot.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -82f), new Vector2(1720f, 72f), new Color(0.015f, 0.018f, 0.022f, 0.80f));
+            var headerSprite = LoadArtifactSelectUiSprite("artifact_select_header_frame");
+            if (headerSprite != null)
+            {
+                panel.color = new Color(0f, 0f, 0f, 0.01f);
+                AddSpriteFrame(panel.transform, headerSprite, Vector2.zero, new Vector2(1660f, 116f));
+            }
+            else
+            {
+                panel.gameObject.AddComponent<Outline>().effectColor = new Color(0.30f, 0.72f, 0.70f, 0.32f);
+            }
+
             var text = CreateText("顶部信息", panel.transform, new Vector2(0.5f, 0.5f), new Vector2(1650f, 58f), 22, TextAnchor.MiddleCenter);
             text.text = $"{GameFlowController.HeroClassName(run.heroClass)}    迷宫 {run.floor}/3 层  房间进度 {run.row}/10    金币 {run.gold}    生命 {run.playerHp:0}/{flow.PlayerMaxHpForRun():0}    本局经验 {run.heroExperience}    主角等级 {flow.CurrentRunPreviewHeroLevel()}    卡组 {run.deckCardIds.Count}    神器 {run.artifactIds.Count}\n{run.lastMessage}";
+            text.color = new Color(0.96f, 0.88f, 0.64f, 0.98f);
+            AddTextShadow(text, new Color(0f, 0f, 0f, 0.82f), new Vector2(1.2f, -1.2f));
         }
 
         private void BuildBackdrop(Transform root)
@@ -1714,7 +1931,7 @@ namespace XTD.Presentation
                 image.color = isClassSelectBackdrop ? new Color(0.68f, 0.70f, 0.72f, 1f) : new Color(0.56f, 0.58f, 0.60f, 1f);
             }
 
-            var veil = CreatePanel("背景暗雾", root, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero, isClassSelectBackdrop ? new Color(0.0f, 0.0f, 0.0f, 0.32f) : new Color(0.0f, 0.0f, 0.0f, 0.34f));
+            var veil = CreatePanel("背景暗雾", root, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero, isClassSelectBackdrop ? new Color(0.0f, 0.0f, 0.0f, 0.26f) : new Color(0.0f, 0.0f, 0.0f, 0.22f));
             veil.rectTransform.offsetMin = Vector2.zero;
             veil.rectTransform.offsetMax = Vector2.zero;
             veil.raycastTarget = false;
@@ -1965,12 +2182,10 @@ namespace XTD.Presentation
 
         private Button CreateArtifactChoiceCard(ArtifactDefinition artifact, Vector2 offset)
         {
-            var button = CreateButton(string.Empty, uiRoot.transform, new Vector2(0.5f, 0.45f), new Vector2(336f, 500f), offset);
+            var size = new Vector2(342f, 538f);
+            var button = CreateButton(string.Empty, uiRoot.transform, new Vector2(0.5f, 0.45f), size, offset);
             var image = button.GetComponent<Image>();
-            image.color = ArtifactPanelColor(artifact.rarity);
-            var outline = button.gameObject.AddComponent<Outline>();
-            outline.effectColor = ArtifactRarityColor(artifact.rarity);
-            outline.effectDistance = new Vector2(2.5f, -2.5f);
+            image.color = new Color(0f, 0f, 0f, 0.01f);
 
             var label = button.GetComponentInChildren<Text>();
             if (label != null)
@@ -1978,32 +2193,78 @@ namespace XTD.Presentation
                 label.text = string.Empty;
             }
 
-            var topSeal = AddNodeHalo(button.transform, true, true);
-            topSeal.rectTransform.sizeDelta = new Vector2(78f, 78f);
-            topSeal.rectTransform.anchoredPosition = new Vector2(0f, 238f);
-            topSeal.color = ArtifactRarityColor(artifact.rarity);
+            var frame = AddSpriteFrame(button.transform, ArtifactCardFrameSprite(artifact.rarity), Vector2.zero, size + new Vector2(24f, 26f));
+            if (frame == null)
+            {
+                image.color = ArtifactPanelColor(artifact.rarity);
+                var outline = button.gameObject.AddComponent<Outline>();
+                outline.effectColor = ArtifactRarityColor(artifact.rarity);
+                outline.effectDistance = new Vector2(2.5f, -2.5f);
+            }
 
-            var iconPanel = CreatePanel("神器图底", button.transform, new Vector2(0.5f, 0.69f), new Vector2(0.5f, 0.69f), Vector2.zero, new Vector2(270f, 220f), new Color(0.018f, 0.030f, 0.034f, 0.58f));
-            iconPanel.raycastTarget = false;
-            AddSpriteIcon(iconPanel.transform, artifact.icon, Vector2.zero, new Vector2(210f, 180f));
+            var iconHalo = AddNodeHalo(button.transform, true, true);
+            iconHalo.rectTransform.sizeDelta = new Vector2(198f, 198f);
+            iconHalo.rectTransform.anchoredPosition = new Vector2(0f, 98f);
+            iconHalo.color = WithAlpha(ArtifactRarityColor(artifact.rarity), 0.18f);
+            iconHalo.transform.SetAsFirstSibling();
 
-            var name = CreateText("神器名", button.transform, new Vector2(0.5f, 0.40f), new Vector2(286f, 52f), 30, TextAnchor.MiddleCenter);
+            var icon = AddSpriteIcon(button.transform, artifact.icon, new Vector2(0f, 96f), new Vector2(142f, 142f));
+            if (icon != null)
+            {
+                icon.color = Color.white;
+            }
+
+            var name = CreateText("神器名", button.transform, new Vector2(0.5f, 0.5f), new Vector2(254f, 54f), 32, TextAnchor.MiddleCenter);
+            name.rectTransform.anchoredPosition = new Vector2(0f, -58f);
             name.text = artifact.displayName;
-            name.color = new Color(0.90f, 1f, 0.96f, 0.98f);
+            name.color = new Color(0.96f, 0.92f, 0.74f, 0.98f);
             name.raycastTarget = false;
+            AddTextShadow(name, new Color(0f, 0f, 0f, 0.86f), new Vector2(1.2f, -1.2f));
 
-            var desc = CreateText("神器描述", button.transform, new Vector2(0.5f, 0.25f), new Vector2(276f, 106f), 22, TextAnchor.MiddleCenter);
+            var desc = CreateText("神器描述", button.transform, new Vector2(0.5f, 0.5f), new Vector2(246f, 90f), 20, TextAnchor.MiddleCenter);
+            desc.rectTransform.anchoredPosition = new Vector2(0f, -142f);
             desc.text = artifact.description;
-            desc.color = new Color(0.90f, 0.95f, 0.93f, 0.96f);
+            desc.color = new Color(0.95f, 0.90f, 0.78f, 0.94f);
             desc.raycastTarget = false;
 
-            var tagPanel = CreatePanel("神器分类底", button.transform, new Vector2(0.5f, 0.08f), new Vector2(0.5f, 0.08f), Vector2.zero, new Vector2(154f, 42f), WithAlpha(ArtifactRarityColor(artifact.rarity), 0.45f));
-            tagPanel.raycastTarget = false;
-            var tag = CreateText("神器分类", tagPanel.transform, new Vector2(0.5f, 0.5f), new Vector2(146f, 34f), 22, TextAnchor.MiddleCenter);
+            var tag = CreateText("神器分类", button.transform, new Vector2(0.5f, 0.5f), new Vector2(142f, 28f), 18, TextAnchor.MiddleCenter);
+            tag.rectTransform.anchoredPosition = new Vector2(0f, -213f);
             tag.text = ArtifactRarityName(artifact.rarity);
-            tag.color = new Color(0.92f, 0.98f, 0.96f, 0.98f);
+            tag.color = new Color(0.96f, 0.88f, 0.70f, 0.98f);
             tag.raycastTarget = false;
+            AddTextShadow(tag, new Color(0f, 0f, 0f, 0.82f), new Vector2(1f, -1f));
 
+            return button;
+        }
+
+        private Button CreateArtifactSelectButton(string label, Vector2 offset, Vector2 size, string spriteName, bool active)
+        {
+            var button = CreateButton(string.Empty, uiRoot.transform, new Vector2(0.5f, 0.5f), size, offset);
+            var image = button.GetComponent<Image>();
+            image.color = new Color(0f, 0f, 0f, 0.01f);
+
+            var blankLabel = button.GetComponentInChildren<Text>();
+            if (blankLabel != null)
+            {
+                blankLabel.text = string.Empty;
+            }
+
+            var sprite = LoadArtifactSelectUiSprite(spriteName);
+            if (sprite != null)
+            {
+                var frame = AddSpriteFrame(button.transform, sprite, Vector2.zero, size);
+                frame.color = active ? Color.white : new Color(0.52f, 0.52f, 0.52f, 0.72f);
+            }
+            else
+            {
+                image.color = active ? new Color(0.05f, 0.20f, 0.22f, 0.94f) : new Color(0.08f, 0.08f, 0.08f, 0.70f);
+            }
+
+            var text = CreateText("神器按钮文字", button.transform, new Vector2(0.5f, 0.5f), size - new Vector2(52f, 20f), 21, TextAnchor.MiddleCenter);
+            text.text = label;
+            text.color = active ? new Color(0.96f, 0.90f, 0.66f, 0.98f) : new Color(0.62f, 0.62f, 0.58f, 0.82f);
+            text.raycastTarget = false;
+            AddTextShadow(text, new Color(0f, 0f, 0f, 0.85f), new Vector2(1.2f, -1.2f));
             return button;
         }
 
@@ -2132,6 +2393,20 @@ namespace XTD.Presentation
             return string.IsNullOrEmpty(fileName)
                 ? null
                 : LoadResourceSprite($"Art/AI/UI/ClassSelect/{fileName}");
+        }
+
+        private static Sprite LoadEventUiSprite(string fileName)
+        {
+            return string.IsNullOrEmpty(fileName)
+                ? null
+                : LoadResourceSprite($"Art/AI/UI/Events/{fileName}");
+        }
+
+        private static Sprite LoadArtifactSelectUiSprite(string fileName)
+        {
+            return string.IsNullOrEmpty(fileName)
+                ? null
+                : LoadResourceSprite($"Art/AI/UI/ArtifactSelect/{fileName}");
         }
 
         private static Sprite LoadResourceSprite(string path)

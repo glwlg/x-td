@@ -42,9 +42,9 @@ namespace XTD.Flow
             var countableCardFamilies = allCards
                 .GroupBy(card => GameContentFactory.BaseCardId(card.id))
                 .Count();
-            if (countableCardFamilies < 25 || countableCardFamilies > 35)
+            if (countableCardFamilies < 25)
             {
-                report.issues.Add($"卡牌内容族应为 25-35，当前为 {countableCardFamilies}。");
+                report.issues.Add($"卡牌内容族至少应为 25，当前为 {countableCardFamilies}。");
             }
 
             var playableCards = allCards.Where(card => card.type != CardType.Curse).ToList();
@@ -59,9 +59,14 @@ namespace XTD.Flow
             var directSoldierCardCount = playableCards
                 .Where(card => card.level == 1)
                 .Count(card => card.type is CardType.Soldier or CardType.EliteSoldier or CardType.Hero);
-            if (productionCardCount < directSoldierCardCount)
+            if (productionCardCount < 4)
             {
-                report.issues.Add($"生产建筑牌应不少于直接出兵牌，当前建筑 {productionCardCount}，直接出兵 {directSoldierCardCount}。");
+                report.issues.Add($"生产建筑牌至少需要 4 种，当前为 {productionCardCount}。");
+            }
+
+            if (directSoldierCardCount < 4)
+            {
+                report.issues.Add($"直接出兵牌至少需要 4 种，当前为 {directSoldierCardCount}。");
             }
 
             RequireCardType(playableCards, CardType.Soldier, "普通士兵牌", report);

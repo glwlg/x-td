@@ -668,7 +668,13 @@ namespace XTD.Battle
 
         public void SpawnDamageNumber(Vector3 position, float value)
         {
+            damageNumberPool ??= new ComponentPool<DamageNumberView>(CreateDamageNumberInstance);
             var number = damageNumberPool.Get();
+            if (number == null)
+            {
+                return;
+            }
+
             number.Initialize(position, Mathf.CeilToInt(value), () => damageNumberPool.Release(number));
         }
 
@@ -1848,7 +1854,15 @@ namespace XTD.Battle
 
         private Vector3 EnemyCorePosition()
         {
-            return new Vector3(laneX, enemyBaseY + 0.12f, 0f);
+            var y = enemyBaseY + 0.12f;
+            if (encounter != null && encounter.coreEnemy != null)
+            {
+                y -= encounter.coreEnemy.role == UnitRole.Boss
+                    ? encounter.nodeType == MapNodeType.FinalBoss ? 0.95f : 0.78f
+                    : 0.34f;
+            }
+
+            return new Vector3(laneX, y, 0f);
         }
 
         private BattleUnit SpawnUnit(UnitDefinition unitDefinition, Faction faction, Vector3 position, bool countCommand)

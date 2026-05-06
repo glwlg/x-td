@@ -203,6 +203,49 @@ namespace XTD.Tests
                 Is.Not.EquivalentTo(GameContentFactory.HeroClassCardPoolBaseIds(HeroClassType.TalismanSealer)));
         }
 
+        [Test]
+        public void HeroClassDefinitions_KeepDistinctStartingDeckProfiles()
+        {
+            var catalog = GameContentFactory.CreateCatalog();
+
+            Assert.That(StartingDeckTypeCount(catalog, HeroClassType.BorderCommander, CardType.Spell), Is.EqualTo(0));
+            Assert.That(StartingDeckTypeCount(catalog, HeroClassType.BorderCommander, CardType.EliteSoldier), Is.GreaterThanOrEqualTo(2));
+
+            Assert.That(StartingDeckTypeCount(catalog, HeroClassType.SpiritSummoner, CardType.Structure), Is.GreaterThanOrEqualTo(6));
+            Assert.That(StartingDeckTypeCount(catalog, HeroClassType.SpiritSummoner, CardType.Spell), Is.EqualTo(0));
+
+            Assert.That(StartingDeckTypeCount(catalog, HeroClassType.ThunderMage, CardType.Spell), Is.GreaterThanOrEqualTo(5));
+            Assert.That(StartingDeckTypeCount(catalog, HeroClassType.ThunderMage, CardType.Structure), Is.EqualTo(1));
+
+            Assert.That(StartingDeckTypeCount(catalog, HeroClassType.TalismanSealer, CardType.Debuff), Is.GreaterThanOrEqualTo(5));
+            Assert.That(StartingDeckTypeCount(catalog, HeroClassType.TalismanSealer, CardType.Spell), Is.EqualTo(0));
+        }
+
+        [Test]
+        public void HeroClassDefinitions_ReserveExclusiveAnchorCardsPerClass()
+        {
+            var classes = GameContentFactory.AvailableHeroClasses();
+
+            foreach (var heroClass in classes)
+            {
+                var pool = GameContentFactory.HeroClassCardPoolBaseIds(heroClass);
+                var otherPools = classes
+                    .Where(candidate => candidate != heroClass)
+                    .SelectMany(GameContentFactory.HeroClassCardPoolBaseIds)
+                    .ToHashSet();
+
+                var exclusiveCards = pool.Where(cardId => !otherPools.Contains(cardId)).ToList();
+                Assert.That(exclusiveCards.Count, Is.GreaterThanOrEqualTo(2), $"{GameFlowController.HeroClassName(heroClass)} should keep at least two exclusive anchor cards.");
+            }
+        }
+
+        private static int StartingDeckTypeCount(ContentCatalog catalog, HeroClassType heroClass, CardType cardType)
+        {
+            return GameContentFactory.StartingDeckCardIds(heroClass)
+                .Select(catalog.FindCard)
+                .Count(card => card != null && card.type == cardType);
+        }
+
         private GameFlowController CreateFlow(ContentCatalog catalog, RunState run)
         {
             var go = new GameObject("GameFlowControllerFlowTests");
